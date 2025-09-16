@@ -9,5 +9,6 @@ dependencies = [
     "langchain>=0.3.0",
     "langchain-google-genai>=2.1.9",
     "langgraph>=0.2.0",
-    "langgraph-cli"
+    "langgraph-cli",
+    "langchain-openai>=0.3.33",
 ]

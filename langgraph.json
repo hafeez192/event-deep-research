@@ -1,7 +1,7 @@
 {
   "dockerfile_lines": [],
   "graphs": {
-    "chatbot": "./src/graph.py:graph"
+    "krono_researcher": "./src/krono_researcher.py:graph"
   },
   "python_version": "3.12",
   "env": ".env",
