@@ -12,4 +12,6 @@ dependencies = [
     "langgraph-cli",
     "langchain-openai>=0.3.33",
     "langchain-ollama>=0.3.8",
+    "langchain-tavily>=0.2.11",
+    "tavily-python>=0.7.12",
 ]

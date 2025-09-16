@@ -43,6 +43,13 @@ class SupervisorStateInput(TypedDict):
     person_to_research: str
 
 
+class Summary(BaseModel):
+    """Research summary with key findings."""
+
+    summary: str
+    key_excerpts: str
+
+
 def override_reducer(current_value, new_value):
     """Reducer function that allows overriding values in state."""
     if isinstance(new_value, dict) and new_value.get("type") == "override":
@@ -54,3 +61,19 @@ def override_reducer(current_value, new_value):
 class SupervisorState(SupervisorStateInput):
     research_iterations: int = 0
     supervisor_messages: Annotated[list[MessageLikeRepresentation], override_reducer]
+
+
+class ResearcherState(TypedDict):
+    """State for individual researchers conducting research."""
+
+    researcher_messages: Annotated[list[MessageLikeRepresentation], operator.add]
+    tool_call_iterations: int = 0
+    person_to_research: str
+    compressed_research: str
+    raw_notes: str
+
+
+class ResearcherOutputState(TypedDict):
+    """Output state for individual researchers conducting research."""
+
+    compressed_research: str

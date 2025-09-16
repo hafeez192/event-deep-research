@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Any, Optional
 
 from pydantic import BaseModel, Field
@@ -5,6 +6,15 @@ from pydantic import BaseModel, Field
 from langchain_core.runnables import RunnableConfig
 
 import os
+
+
+class SearchAPI(Enum):
+    """Enumeration of available search API providers."""
+
+    ANTHROPIC = "anthropic"
+    OPENAI = "openai"
+    TAVILY = "tavily"
+    NONE = "none"
 
 
 class Configuration(BaseModel):
@@ -28,6 +38,30 @@ class Configuration(BaseModel):
     )
     max_concurrent_research_units: int = Field(
         default=1,
+    )
+    search_api: SearchAPI = Field(
+        default=SearchAPI.TAVILY,
+    )
+    compression_model: str = Field(
+        default="ollama:gpt-oss:latest",
+    )
+    compression_model_max_tokens: int = Field(
+        default=2048,
+    )
+
+    max_react_tool_calls: int = Field(
+        default=2,
+    )
+
+    max_content_length: int = Field(
+        default=50000,
+    )
+
+    summarization_model: str = Field(
+        default="ollama:gpt-oss:latest",
+    )
+    summarization_model_max_tokens: int = Field(
+        default=2048,
     )
 
     @classmethod
