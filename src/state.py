@@ -12,7 +12,7 @@ class ConductResearch(BaseModel):
     """Call this tool to research a specific person."""
 
     research_person: str = Field(
-        description="The person to research. Should be a single person, and should be described in high detail (at least a paragraph).",
+        description="The person to research. Just it's name and basic biographical information like birth date, death date, and location.",
     )
 
 

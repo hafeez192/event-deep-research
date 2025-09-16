@@ -16,8 +16,9 @@ class Configuration(BaseModel):
     )
 
     research_model: str = Field(
-        default="google_genai:gemini-2.5-flash-lite",
+        # default="google_genai:gemini-2.5-flash-lite",
         # default="openai:gpt-4o-mini"
+        default="ollama:gpt-oss:latest",
     )
     research_model_max_tokens: int = Field(
         default=1000,

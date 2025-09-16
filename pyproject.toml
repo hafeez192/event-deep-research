@@ -11,4 +11,5 @@ dependencies = [
     "langgraph>=0.2.0",
     "langgraph-cli",
     "langchain-openai>=0.3.33",
+    "langchain-ollama>=0.3.8",
 ]
