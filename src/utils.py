@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime
 import logging
 from langchain_core.language_models import BaseChatModel
+import requests
 from tavily import AsyncTavilyClient
 from langchain_core.tools import (
     tool,
@@ -19,6 +20,7 @@ from typing import Annotated, List, Literal
 
 from src.prompts import summarize_webpage_prompt
 from src.state import ResearchComplete, Summary
+import re
 
 ##########################
 # Tavily Search Tool Utils
@@ -27,6 +29,47 @@ TAVILY_SEARCH_DESCRIPTION = (
     "A search engine optimized for comprehensive, accurate, and trusted results. "
     "Useful for when you need to answer questions about current events."
 )
+FIRECRAWL_API_URL = "http://localhost:3002/v0/scrape"
+
+
+@tool(description="Url Crawl")
+async def url_crawl(url: str) -> str:
+    """Crawl a URL and return the content.
+
+    Args:
+        url: The URL to crawl
+
+    Returns:
+        The content of the URL
+    """
+
+    content = scrape_page_content(url)
+    return remove_markdown_links(content)
+
+
+def scrape_page_content(url):
+    """Scrapes URL using Firecrawl API and returns Markdown content."""
+    try:
+        response = requests.post(
+            FIRECRAWL_API_URL,
+            json={
+                "url": url,
+                "pageOptions": {"onlyMainContent": True},
+                "formats": ["markdown"],
+            },
+            headers={"Content-Type": "application/json"},
+            timeout=30,
+        )
+        response.raise_for_status()
+        data = response.json()
+        return data.get("data", {}).get("markdown")
+    except requests.exceptions.RequestException:
+        return None
+
+
+def remove_markdown_links(markdown_text):
+    """Removes Markdown links, keeping only display text."""
+    return re.sub(r"\[(.*?)\]\(.*?\)", r"\1", markdown_text)
 
 
 @tool(description=TAVILY_SEARCH_DESCRIPTION)
@@ -214,32 +257,25 @@ async def summarize_webpage(model: BaseChatModel, webpage_content: str) -> str:
 ##########################
 
 
-@tool(description="Strategic reflection tool for research planning")
-def think_tool(reflection: str) -> str:
-    """Tool for strategic reflection on research progress and decision-making.
+@tool
+def reflect_on_chronology(reflection_and_plan: str) -> str:
+    """
+    A tool for the research assistant to reflect on chronological findings, identify gaps in the timeline, and plan the next research step.
 
-    Use this tool after each search to analyze results and plan next steps systematically.
-    This creates a deliberate pause in the research workflow for quality decision-making.
-
-    When to use:
-    - After receiving search results: What key information did I find?
-    - Before deciding next steps: Do I have enough to answer comprehensively?
-    - When assessing research gaps: What specific information am I still missing?
-    - Before concluding research: Can I provide a complete answer now?
-
-    Reflection should address:
-    1. Analysis of current findings - What concrete information have I gathered?
-    2. Gap assessment - What crucial information is still missing?
-    3. Quality evaluation - Do I have sufficient evidence/examples for a good answer?
-    4. Strategic decision - Should I continue searching or provide my answer?
+    Use this tool after every web search to assess the completeness of the biography.
+    The input should be a concise summary of your thoughts.
 
     Args:
-        reflection: Your detailed reflection on research progress, findings, gaps, and next steps
-
-    Returns:
-        Confirmation that reflection was recorded for decision-making
+        reflection_and_plan: A concise, multi-line string that must include these three parts:
+        1. **Events Found:** A summary of new chronological facts and dates just learned.
+        2. **Timeline Gaps:** An analysis of what key periods or events are still missing from the person's life story.
+        3. **Next Action:** The specific search query to run next to fill the gaps, or the single word "STOP" if the timeline is complete enough.
     """
-    return f"Reflection recorded: {reflection}"
+    # The tool's main purpose is to force the agent to pause, structure its thoughts,
+    # and document its plan. It simply returns the thought process to be added to the
+    # message history, which guides the agent's next turn.
+    print(f"--- AGENT REFLECTION ---\n{reflection_and_plan}\n----------------------")
+    return reflection_and_plan
 
 
 def get_api_key_for_model(model_name: str, config: RunnableConfig):
@@ -300,13 +336,14 @@ async def get_all_tools(config: RunnableConfig):
         List of all configured and available tools for research operations
     """
     # Start with core research tools
-    tools = [tool(ResearchComplete), think_tool]
+    tools = [tool(ResearchComplete), reflect_on_chronology]
 
     # Add configured search tools
     configurable = Configuration.from_runnable_config(config)
-    search_api = SearchAPI(get_config_value(configurable.search_api))
-    search_tools = await get_search_tool(search_api)
-    tools.extend(search_tools)
+    # search_api = SearchAPI(get_config_value(configurable.search_api))
+    # search_tools = await get_search_tool(search_api)
+    search_tools = [url_crawl]
+    # tools.extend(search_tools)
 
     print(f"Tools: {tools}")
 

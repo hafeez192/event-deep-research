@@ -1,0 +1,28 @@
+{
+  "researcher_messages": [
+    {
+      "content": "Biography of Henry Miller",
+      "type": "human"
+    },
+    {
+      "content": "",
+      "type": "ai",
+      "tool_calls": [
+        {
+          "name": "url_crawl",
+          "args": {
+            "url": "https://en.wikipedia.org/wiki/Henry_Miller"
+          },
+          "id": "1",
+          "type": "tool_call"
+        }
+      ]
+    },
+    {
+      "content": "Brooklyn, 1917–1930 Miller married his first wife, Beatrice Sylvas Wickens, in 1917;[11] their divorce was granted on December 21, 1923.[12] Together they had a daughter, Barbara, born in 1919.[13] They lived in an apartment at 244 6th Avenue in Park Slope, Brooklyn .[14] At the time, Miller was working at Western Union ; he worked there from 1920 to 1924 as personnel manager in the messenger department. In March 1922, during a three-week vacation, he wrote his first novel, Clipped Wings. It has never been published, and only fragments remain, although parts of it were recycled in other works, such as _Tropic of Capricorn \"Tropic of Capricorn (novel)\") _.[15] A study of twelve Western Union messengers, Clipped Wings was characterized by Miller as \"a long book and probably a very bad one.\"[16] In 1923, while still married to Beatrice, Miller met and became enamored of a mysterious dance-hall ingénue who was born Juliet Edith Smerth but went by the stage-name June Mansfield . She was 21 at the time.[17] They began an affair, and married on June 1, 1924.[18] In 1924 Miller quit Western Union to dedicate himself completely to writing.[19] He described this time—his struggles to become a writer, his sexual escapades, his failures, his friends, his philosophy—in his autobiographical trilogy _The Rosy Crucifixion _. Miller's second novel, _Moloch: or, This Gentile World _, was written in 1927–28, initially under the guise of a novel by his wife Juliet (June).[20] A rich older admirer of June, Roland Freedman, paid her to write the novel; she would show him pages of Miller's work each week, pretending it was hers.[21] The book was unpublished until 1992, 65 years after it was written and 12 years after Miller's death.[20] Moloch is based on Miller's first marriage and his years working at the Western Union office in Lower Manhattan .[22] A third novel written around this time, Crazy Cock, was also unpublished until after Miller's death. Initially titled Lovely Lesbians, Crazy Cock (along with his later novel Nexus) told the story of June's close relationship with the artist Marion, whom June renamed Jean Kronski. Kronski lived with Miller and June from 1926 until 1927, when June and Kronski went to Paris together, leaving Miller behind, which upset him greatly. Miller suspected the two of having a sexual relationship. While in Paris, June and Kronski did not get along, and June returned to Miller several months later.[23] Kronski died by suicide around 1930.[24] ",
+      "type": "tool",
+      "name": "url_crawl",
+      "tool_call_id": "1"
+    }
+  ]
+}

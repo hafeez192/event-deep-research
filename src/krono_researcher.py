@@ -12,6 +12,8 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import Literal
 from langgraph.graph.state import RunnableConfig
 import asyncio
+import json
+import re
 from langgraph.types import Command
 
 from src.configuration import Configuration
@@ -21,8 +23,9 @@ from src.prompts import (
     lead_researcher_prompt,
     research_system_prompt,
 )
-from src.utils import get_all_tools, get_api_key_for_model, think_tool
+from src.utils import get_all_tools, get_api_key_for_model, reflect_on_chronology
 from src.state import (
+    Chronology,
     ConductResearch,
     ResearchComplete,
     ResearcherOutputState,
@@ -51,7 +54,7 @@ async def supervisor(
         "api_key": get_api_key_for_model(configurable.research_model, config),
         "tags": ["langsmith:nostream"],
     }
-    person_researcher_tools = [ConductResearch, ResearchComplete, think_tool]
+    person_researcher_tools = [ConductResearch, ResearchComplete, reflect_on_chronology]
     person_to_research = state.get("person_to_research", "")
 
     if not person_to_research:
@@ -96,7 +99,7 @@ async def supervisor_tools(
     """Execute tools called by the supervisor, including research delegation and strategic thinking.
 
     This function handles three types of supervisor tool calls:
-    1. think_tool - Strategic reflection that continues the conversation
+    1. reflect_on_chronology - Strategic reflection that continues the conversation
     2. ConductResearch - Delegates research tasks to sub-researchers
     3. ResearchComplete - Signals completion of research phase
 
@@ -127,23 +130,23 @@ async def supervisor_tools(
     if exceeded_allowed_iterations or no_tool_calls or research_complete_tool_call:
         return Command(goto=END)
 
-    # Step 2: Process all tool calls together (both think_tool and ConductResearch)
+    # Step 2: Process all tool calls together (both reflect_on_chronology and ConductResearch)
     all_tool_messages = []
     update_payload = {"supervisor_messages": []}
 
-    # Handle think_tool calls (strategic reflection)
-    think_tool_calls = [
+    # Handle reflect_on_chronology calls (strategic reflection)
+    reflect_on_chronology_calls = [
         tool_call
         for tool_call in most_recent_message.tool_calls
-        if tool_call["name"] == "think_tool"
+        if tool_call["name"] == "reflect_on_chronology"
     ]
 
-    for tool_call in think_tool_calls:
-        reflection_content = tool_call["args"]["reflection"]
+    for tool_call in reflect_on_chronology_calls:
+        reflection_content = tool_call["args"]["reflection_and_plan"]
         all_tool_messages.append(
             ToolMessage(
                 content=f"Reflection recorded: {reflection_content}",
-                name="think_tool",
+                name="reflect_on_chronology",
                 tool_call_id=tool_call["id"],
             )
         )
@@ -228,7 +231,6 @@ async def researcher(
         "researcher_messages", []
     )
     response = await research_model.ainvoke(messages)
-
     # Step 4: Update state and proceed to tool execution
     return Command(
         goto="researcher_tools",
@@ -242,6 +244,7 @@ async def researcher(
 # Tool Execution Helper Function
 async def execute_tool_safely(tool, args, config):
     """Safely execute a tool with error handling."""
+    print("Executing tool: ", tool.name)
     try:
         return await tool.ainvoke(args, config)
     except Exception as e:
@@ -254,7 +257,7 @@ async def researcher_tools(
     """Execute tools called by the researcher, including search tools and strategic thinking.
 
     This function handles various types of researcher tool calls:
-    1. think_tool - Strategic reflection that continues the research conversation
+    1. reflect_on_chronology - Strategic reflection that continues the research conversation
     2. Search tools (tavily_search, web_search) - Information gathering
     3. MCP tools - External tool integrations
     4. ResearchComplete - Signals completion of individual research task
@@ -279,10 +282,9 @@ async def researcher_tools(
 
     # Step 2: Handle other tool calls (search, MCP tools, etc.)
     tools = await get_all_tools(config)
-    tools_by_name = {
-        tool.name if hasattr(tool, "name") else tool.get("name", "web_search"): tool
-        for tool in tools
-    }
+    tools_by_name = {tool.name: tool for tool in tools}
+    print("tools", tools)
+    print("tools_by_name", tools_by_name)
 
     # Execute all tool calls in parallel
     tool_calls = most_recent_message.tool_calls
@@ -312,7 +314,8 @@ async def researcher_tools(
     if exceeded_iterations or research_complete_called:
         # End research and proceed to compression
         return Command(
-            goto="compress_research", update={"researcher_messages": tool_outputs}
+            goto="compress_research",
+            update={"researcher_messages": {"value": tool_outputs, "type": "override"}},
         )
 
     # Continue research loop with tool results
@@ -320,20 +323,20 @@ async def researcher_tools(
 
 
 async def compress_research(state: ResearcherState, config: RunnableConfig):
-    """Compress and synthesize research findings into a concise, structured summary.
+    """
+    Extracts chronological events from research findings and structures them.
 
-    This function takes all the research findings, tool outputs, and AI messages from
-    a researcher's work and distills them into a clean, comprehensive summary while
-    preserving all important information and findings.
+    This function processes all research messages, identifies key life events
+    of the subject, and formats them into a structured list of ChronologyEvent objects.
 
     Args:
-        state: Current researcher state with accumulated research messages
-        config: Runtime configuration with compression model settings
+        state: Current researcher state with accumulated research messages.
+        config: Runtime configuration with model settings.
 
     Returns:
-        Dictionary containing compressed research summary and raw notes
+        Dictionary containing a list of structured chronology events and raw notes.
     """
-    # Step 1: Configure the compression model
+    # Step 1: Configure the model
     configurable = Configuration.from_runnable_config(config)
     synthesizer_model = configurable_model.with_config(
         {
@@ -344,28 +347,31 @@ async def compress_research(state: ResearcherState, config: RunnableConfig):
         }
     )
 
+    structured_llm = synthesizer_model.with_structured_output(Chronology)
+
     # Step 2: Prepare messages for compression
     researcher_messages = state.get("researcher_messages", [])
-    print("length of researcher_messages", len(researcher_messages))
-    # Add instruction to switch from research mode to compression mode
     researcher_messages.append(
         HumanMessage(content=compress_research_simple_human_message)
     )
 
-    # Step 3: Attempt compression with retry logic for token limit issues
+    # Step 3: Attempt extraction with retry logic
     synthesis_attempts = 0
     max_attempts = 3
 
     while synthesis_attempts < max_attempts:
         try:
-            print("attempting compression", synthesis_attempts)
-            # Create system prompt focused on compression task
-            compression_prompt = compress_research_system_prompt
-            messages = [SystemMessage(content=compression_prompt)] + researcher_messages
+            print(f"Attempting chronological extraction: {synthesis_attempts + 1}")
 
-            # Execute compression
-            response = await synthesizer_model.ainvoke(messages)
-            print("response", response)
+            # Create system prompt focused on the extraction task
+            messages = [
+                SystemMessage(content=compress_research_system_prompt)
+            ] + researcher_messages
+
+            print("messages", messages)
+            # Execute structured extraction
+            response_model = await structured_llm.ainvoke(messages)
+
             # Extract raw notes from all tool and AI messages
             raw_notes_content = "\n".join(
                 [
@@ -376,16 +382,72 @@ async def compress_research(state: ResearcherState, config: RunnableConfig):
                 ]
             )
 
-            # Return successful compression result
+            # Convert Pydantic event objects to dicts to match the TypedDict state
+            chronology_events_as_dicts = [
+                event.dict() for event in response_model.events
+            ]
+
+            # Return successful result
             return {
-                "compressed_research": str(response.content),
+                "compressed_research": chronology_events_as_dicts,
                 "raw_notes": raw_notes_content,
             }
 
         except Exception as e:
-            print("error attempting compression", e)
+            print(f"Error during extraction attempt {synthesis_attempts + 1}: {e}")
+            print(f"Error type: {type(e).__name__}")
+
+            # Try fallback approach: get raw response and parse manually
+            try:
+                print("Attempting fallback JSON parsing...")
+                raw_response = await synthesizer_model.ainvoke(messages)
+                print(f"Raw model response: {raw_response}")
+                print(f"Raw response content: {raw_response.content}")
+
+                # Try to extract JSON from the response
+
+                content = raw_response.content
+                # Look for JSON in the response
+                json_match = re.search(r"\{.*\}", content, re.DOTALL)
+                if json_match:
+                    json_str = json_match.group()
+                    print(f"Found JSON string: {json_str}")
+
+                    # Parse the JSON
+                    parsed_data = json.loads(json_str)
+                    print(f"Parsed JSON: {parsed_data}")
+
+                    # Try to create Chronology object from parsed data
+                    if "events" in parsed_data:
+                        chronology = Chronology(**parsed_data)
+                        chronology_events_as_dicts = [
+                            event.dict() for event in chronology.events
+                        ]
+
+                        # Extract raw notes
+                        raw_notes_content = "\n".join(
+                            [
+                                str(message.content)
+                                for message in filter_messages(
+                                    researcher_messages, include_types=["tool", "ai"]
+                                )
+                            ]
+                        )
+
+                        print("Fallback parsing successful!")
+                        return {
+                            "compressed_research": chronology_events_as_dicts,
+                            "raw_notes": raw_notes_content,
+                        }
+                    else:
+                        print("No 'events' key found in parsed JSON")
+                else:
+                    print("No JSON found in response content")
+
+            except Exception as fallback_e:
+                print(f"Fallback parsing also failed: {fallback_e}")
+
             synthesis_attempts += 1
-            # For other errors, continue retrying
             continue
 
     # Step 4: Return error result if all attempts failed
@@ -399,8 +461,9 @@ async def compress_research(state: ResearcherState, config: RunnableConfig):
     )
 
     return {
-        "compressed_research": "Error synthesizing research report: Maximum retries exceeded",
-        "raw_notes": [raw_notes_content],
+        # Return an empty list to match the required type for 'compressed_research'
+        "compressed_research": [],
+        "raw_notes": raw_notes_content,
     }
 
 

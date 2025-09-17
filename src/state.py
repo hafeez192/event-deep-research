@@ -20,23 +20,10 @@ class ResearchComplete(BaseModel):
     """Call this tool to indicate that the research is complete."""
 
 
-class ChronologyDate(TypedDict):
-    year: int
-    month: int
-    day: Optional[int]
-
-
-class ChronologyEvent(TypedDict):
-    name: str
-    description: str
-    date: ChronologyDate
-    location: Optional[str]
-
-
-class PersonState(TypedDict):
-    name: str
-    description: str
-    chronology: list[ChronologyEvent]
+# class PersonState(TypedDict):
+#     name: str
+#     description: str
+#     chronology: list[ChronologyEvent]
 
 
 class SupervisorStateInput(TypedDict):
@@ -66,14 +53,54 @@ class SupervisorState(SupervisorStateInput):
 class ResearcherState(TypedDict):
     """State for individual researchers conducting research."""
 
-    researcher_messages: Annotated[list[MessageLikeRepresentation], operator.add]
+    researcher_messages: Annotated[list[MessageLikeRepresentation], override_reducer]
     tool_call_iterations: int = 0
     person_to_research: str
     compressed_research: str
     raw_notes: str
 
 
+class ChronologyDate(BaseModel):
+    """A structured representation of a date for a chronological event."""
+
+    year: Optional[int] = Field(None, description="The year of the event.")
+    month: Optional[int] = Field(None, description="The month of the event (1-12).")
+    day: Optional[int] = Field(None, description="The day of the event.")
+    note: Optional[str] = Field(
+        None,
+        description="A note for ambiguous or non-specific dates, e.g., 'Summer 1922' or 'Late in the year'.",
+    )
+
+
+class ChronologyEvent(BaseModel):
+    """Represents a single, significant event in a chronological timeline."""
+
+    name: str = Field(
+        description="A short, title-like name for the event (e.g., 'Publication of Novel X', 'Moved to Paris').",
+    )
+    description: str = Field(
+        description="A concise description of the event, containing the key details from the research.",
+    )
+    # date: ChronologyDate = Field(..., description="The structured date of the event.")
+    date: Optional[str] = Field(
+        None,
+        description="The date of the event, if mentioned.",
+    )
+    location: Optional[str] = Field(
+        None,
+        description="The geographical location where the event occurred, if mentioned.",
+    )
+
+
+class Chronology(BaseModel):
+    """A complete chronological list of events extracted from research notes."""
+
+    events: list[ChronologyEvent] = Field(
+        description="A comprehensive list of all chronological events found in the research.",
+    )
+
+
 class ResearcherOutputState(TypedDict):
     """Output state for individual researchers conducting research."""
 
-    compressed_research: str
+    compressed_research: list[ChronologyEvent]

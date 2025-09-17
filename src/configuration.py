@@ -50,7 +50,7 @@ class Configuration(BaseModel):
     )
 
     max_react_tool_calls: int = Field(
-        default=2,
+        default=1,
     )
 
     max_content_length: int = Field(
