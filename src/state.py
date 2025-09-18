@@ -64,11 +64,9 @@ class ChronologyDate(BaseModel):
     """A structured representation of a date for a chronological event."""
 
     year: Optional[int] = Field(None, description="The year of the event.")
-    month: Optional[int] = Field(None, description="The month of the event (1-12).")
-    day: Optional[int] = Field(None, description="The day of the event.")
     note: Optional[str] = Field(
         None,
-        description="A note for ambiguous or non-specific dates, e.g., 'Summer 1922' or 'Late in the year'.",
+        description="Adds extra information to the date (month, day, range...)",
     )
 
 
@@ -81,11 +79,7 @@ class ChronologyEvent(BaseModel):
     description: str = Field(
         description="A concise description of the event, containing the key details from the research.",
     )
-    # date: ChronologyDate = Field(..., description="The structured date of the event.")
-    date: Optional[str] = Field(
-        None,
-        description="The date of the event, if mentioned.",
-    )
+    date: ChronologyDate = Field(..., description="The structured date of the event.")
     location: Optional[str] = Field(
         None,
         description="The geographical location where the event occurred, if mentioned.",
