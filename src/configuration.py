@@ -43,10 +43,10 @@ class Configuration(BaseModel):
         default=SearchAPI.TAVILY,
     )
     compression_model: str = Field(
-        default="ollama:gpt-oss:latest",
+        default="ollama:llama3.1:latest",  # Errors with gpt-oss and structured output
     )
     compression_model_max_tokens: int = Field(
-        default=2048,
+        default=8192,
     )
 
     max_react_tool_calls: int = Field(

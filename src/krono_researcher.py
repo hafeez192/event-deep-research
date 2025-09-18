@@ -14,6 +14,7 @@ from langgraph.graph.state import RunnableConfig
 import asyncio
 import json
 import re
+from langgraph.pregel.main import BaseModel
 from langgraph.types import Command
 
 from src.configuration import Configuration
@@ -357,7 +358,7 @@ async def compress_research(state: ResearcherState, config: RunnableConfig):
 
     # Step 3: Attempt extraction with retry logic
     synthesis_attempts = 0
-    max_attempts = 3
+    max_attempts = 1
 
     while synthesis_attempts < max_attempts:
         try:
@@ -368,9 +369,10 @@ async def compress_research(state: ResearcherState, config: RunnableConfig):
                 SystemMessage(content=compress_research_system_prompt)
             ] + researcher_messages
 
-            print("messages", messages)
+            content = "You are an expert biographical archivist. Your sole task is to extract a chronological list of significant life events from the provided research notes.\n\n<Task>\nYou must identify every event that can be associated with a specific date or time period. For each event, you will extract its name, a detailed description, its date, and location. You must output this information as a structured JSON object.\n</Task>\n\n<Guidelines>\n1.  Focus exclusively on chronological events (e.g., births, deaths, publications, moves, new jobs, significant personal events).\n2.  Ignore all non-chronological information, such as thematic analysis, character descriptions, or literary criticism. If the information does not have a date, do not include it.\n3.  For the `name` field, create a short, descriptive title for the event.\n4.  For the `description` field, provide a clear and concise summary of what happened.\n5.  For the `date` field, populate `year`, `month`, and `day` whenever possible. If a date is ambiguous (e.g., \"summer 1922\" or \"early in the year\"), use the `note` field to capture that detail.\n</Guidelines>\n\nCRITICAL: You must only return the structured JSON output. Do not add any commentary, greetings, or explanations before or after the JSON.\n', additional_kwargs={}, response_metadata={}), ToolMessage(content='Events Found:\n- Born 1891 (likely), died 1980? Need dates.\n- Married Beatrice Wickens 1917, divorced 1923.\n- Daughter Barbara born 1919.\n- Worked at Western Union 1920-1924.\n- Married June Mansfield 1924.\n- Published works and autobiographical trilogy, etc.\nTimeline Gaps:\n- Exact birth and death dates and locations.\n- Education background.\n- Early career before 1920.\n- Details about move to Paris, later life.\n- Children beyond Barbara.\n- Publication dates of major works.\n- Key later life events (e.g., moving to Mexico, etc.).\nNext Action:\n\"Henry Miller birth date and early life\"', name='reflect_on_chronology', tool_call_id='723bfec8-59a9-471e-9eb6-f5ad89fd4adc'), HumanMessage(content='The research messages above contain biographical information. Based on these notes, please extract all significant chronological life events and return them in the required structured format."
+
             # Execute structured extraction
-            response_model = await structured_llm.ainvoke(messages)
+            response_model = await structured_llm.ainvoke(content)
 
             # Extract raw notes from all tool and AI messages
             raw_notes_content = "\n".join(
@@ -396,56 +398,6 @@ async def compress_research(state: ResearcherState, config: RunnableConfig):
         except Exception as e:
             print(f"Error during extraction attempt {synthesis_attempts + 1}: {e}")
             print(f"Error type: {type(e).__name__}")
-
-            # Try fallback approach: get raw response and parse manually
-            try:
-                print("Attempting fallback JSON parsing...")
-                raw_response = await synthesizer_model.ainvoke(messages)
-                print(f"Raw model response: {raw_response}")
-                print(f"Raw response content: {raw_response.content}")
-
-                # Try to extract JSON from the response
-
-                content = raw_response.content
-                # Look for JSON in the response
-                json_match = re.search(r"\{.*\}", content, re.DOTALL)
-                if json_match:
-                    json_str = json_match.group()
-                    print(f"Found JSON string: {json_str}")
-
-                    # Parse the JSON
-                    parsed_data = json.loads(json_str)
-                    print(f"Parsed JSON: {parsed_data}")
-
-                    # Try to create Chronology object from parsed data
-                    if "events" in parsed_data:
-                        chronology = Chronology(**parsed_data)
-                        chronology_events_as_dicts = [
-                            event.dict() for event in chronology.events
-                        ]
-
-                        # Extract raw notes
-                        raw_notes_content = "\n".join(
-                            [
-                                str(message.content)
-                                for message in filter_messages(
-                                    researcher_messages, include_types=["tool", "ai"]
-                                )
-                            ]
-                        )
-
-                        print("Fallback parsing successful!")
-                        return {
-                            "compressed_research": chronology_events_as_dicts,
-                            "raw_notes": raw_notes_content,
-                        }
-                    else:
-                        print("No 'events' key found in parsed JSON")
-                else:
-                    print("No JSON found in response content")
-
-            except Exception as fallback_e:
-                print(f"Fallback parsing also failed: {fallback_e}")
 
             synthesis_attempts += 1
             continue
