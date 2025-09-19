@@ -1,6 +1,7 @@
 import operator
-from typing import Annotated, Optional
-from langchain_core.messages import MessageLikeRepresentation
+from typing import Annotated, List, Optional, Sequence
+from langchain_core.messages import MessageLikeRepresentation, ToolCall, ToolMessage
+from langgraph.graph import add_messages
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
@@ -54,7 +55,10 @@ class ResearcherState(TypedDict):
     """State for individual researchers conducting research."""
 
     researcher_messages: Annotated[list[MessageLikeRepresentation], override_reducer]
+    think_content: str
+    historical_figure: str
     tool_call_iterations: int = 0
+    tool_calls: List[ToolCall]
     person_to_research: str
     compressed_research: str
     raw_notes: str

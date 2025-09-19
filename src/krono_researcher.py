@@ -1,15 +1,17 @@
 # src/krono_researcher.py
 
+from typing import List
 from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import (
     HumanMessage,
+    MessageLikeRepresentation,
     SystemMessage,
     ToolMessage,
     filter_messages,
 )
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.message import Literal
+from langgraph.graph.message import BaseMessage, Literal
 from langgraph.graph.state import RunnableConfig
 import asyncio
 from langgraph.types import Command
@@ -225,15 +227,53 @@ async def researcher(
     )
 
     # Step 3: Generate researcher response with system context
-    messages = [SystemMessage(content=research_system_prompt)] + state.get(
-        "researcher_messages", []
+    system_message: SystemMessage = SystemMessage(
+        content=research_system_prompt.format(
+            historical_figure=state.get("historical_figure", ""),
+        )
     )
-    print("MESSAGES INVOKED WHEN CALLING RESEARCHER (BING TOOLS)", len(messages))
-    response = await research_model.ainvoke(messages)
+
+    current_thinking_reflection = state.get("think_content", "")
+    current_thinking_reflection_message = HumanMessage(
+        content="Current thinking reflection: " + current_thinking_reflection
+    )
+
+    tool_calls_made = state.get("tool_calls", [])
+    tool_calls_made_message = HumanMessage(
+        content="Tool calls made: " + str(tool_calls_made)
+    )
+
+    researcher_messages = state.get("researcher_messages", [])
+    last_message = HumanMessage(content="")
+    if len(researcher_messages) > 0:
+        last_message = researcher_messages[-1]
+        print("LAST MESSAGE CONTENT", last_message.content)
+
+    prompt = [
+        system_message,
+        current_thinking_reflection_message,
+        tool_calls_made_message,
+        last_message,
+    ]
+
+    total_letters = sum(
+        len(
+            message.content
+            if isinstance(message, BaseMessage)
+            else message.get("content", "")
+        )
+        for message in prompt
+        if (isinstance(message, BaseMessage) and hasattr(message, "content"))
+        or (isinstance(message, dict) and "content" in message)
+    )
+    print("TOTAL LETTERS IN MESSAGES", total_letters)
+    response = await research_model.ainvoke(prompt)
+
     # Step 4: Update state and proceed to tool execution
     return Command(
         goto="researcher_tools",
         update={
+            "tool_calls": state.get("tool_calls", []) + response.tool_calls,
             "researcher_messages": [response],
             "tool_call_iterations": state.get("tool_call_iterations", 0) + 1,
         },
@@ -277,19 +317,21 @@ async def researcher_tools(
     has_tool_calls = bool(most_recent_message.tool_calls)
 
     if not has_tool_calls:
-        return Command(goto="compress_research")
+        return Command(goto="__end__")  # Changed to compress_research after testing
 
     # Step 2: Handle other tool calls (search, MCP tools, etc.)
     tools = await get_all_tools(config)
     tools_by_name = {tool.name: tool for tool in tools}
-    print("tools", tools)
-    print("tools_by_name", tools_by_name)
 
     # Execute all tool calls in parallel
-    tool_calls = most_recent_message.tool_calls
+    non_think_tool_calls = [
+        tool_call
+        for tool_call in most_recent_message.tool_calls
+        if tool_call["name"] != "think_tool"
+    ]
     tool_execution_tasks = [
         execute_tool_safely(tools_by_name[tool_call["name"]], tool_call["args"], config)
-        for tool_call in tool_calls
+        for tool_call in non_think_tool_calls
     ]
     observations = await asyncio.gather(*tool_execution_tasks)
 
@@ -298,8 +340,19 @@ async def researcher_tools(
         ToolMessage(
             content=observation, name=tool_call["name"], tool_call_id=tool_call["id"]
         )
-        for observation, tool_call in zip(observations, tool_calls)
+        for observation, tool_call in zip(observations, non_think_tool_calls)
     ]
+
+    # Handle think_tool calls (strategic reflection)
+    think_tool_calls = [
+        tool_call
+        for tool_call in most_recent_message.tool_calls
+        if tool_call["name"] == "think_tool"
+    ]
+    think_content = ""
+
+    for tool_call in think_tool_calls:
+        think_content += tool_call["args"]["reflection_and_plan"]
 
     # Step 3: Check late exit conditions (after processing tools)
     exceeded_iterations = (
@@ -313,12 +366,21 @@ async def researcher_tools(
     if exceeded_iterations or research_complete_called:
         # End research and proceed to compression
         return Command(
-            goto="compress_research",
-            update={"researcher_messages": {"value": tool_outputs}},
+            goto="__end__",  # Changed to compress_research after testing
+            update={
+                "researcher_messages": {"value": tool_outputs},
+                "think_content": think_content,
+            },
         )
 
     # Continue research loop with tool results
-    return Command(goto="researcher", update={"researcher_messages": tool_outputs})
+    return Command(
+        goto="researcher",
+        update={
+            "researcher_messages": tool_outputs,
+            **({"think_content": think_content} if think_content else {}),
+        },
+    )
 
 
 async def compress_research(state: ResearcherState, config: RunnableConfig):

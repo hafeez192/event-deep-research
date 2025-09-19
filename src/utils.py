@@ -353,8 +353,6 @@ async def get_all_tools(config: RunnableConfig):
     search_tools = [url_crawl]
     tools.extend(search_tools)
 
-    print(f"Tools: {tools}")
-
     return tools
 
 
