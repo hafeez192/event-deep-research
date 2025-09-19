@@ -43,8 +43,16 @@ async def url_crawl(url: str) -> str:
         The content of the URL
     """
 
-    content = scrape_page_content(url)
-    return remove_markdown_links(content)
+    if "wikipedia" in url:
+        return "Brooklyn, 1917–1930 Miller married his first wife, Fulana de la cual, in 1917;[11] their divorce was granted on December 21, 1923."
+
+    elif "britannica" in url:
+        return "Frace, Miller Wrote Tropic of Capricorn, this was in 1939 and the book detailed his life in France in particular the people like the artist Marcel Duchamp and the writer Simone de Beauvoir."
+    else:
+        return "Henry Miller spent the last years of his Life in Glasgow, where he died while playing the piano for his two cats, jane and marie."
+
+    # content = scrape_page_content(url)
+    # return remove_markdown_links(content)
 
 
 def scrape_page_content(url):
@@ -258,7 +266,7 @@ async def summarize_webpage(model: BaseChatModel, webpage_content: str) -> str:
 
 
 @tool
-def reflect_on_chronology(reflection_and_plan: str) -> str:
+def think_tool(reflection_and_plan: str) -> str:
     """
     A tool for the research assistant to reflect on chronological findings, identify gaps in the timeline, and plan the next research step.
 
@@ -336,14 +344,14 @@ async def get_all_tools(config: RunnableConfig):
         List of all configured and available tools for research operations
     """
     # Start with core research tools
-    tools = [tool(ResearchComplete), reflect_on_chronology]
+    tools = [tool(ResearchComplete), think_tool]
 
     # Add configured search tools
     configurable = Configuration.from_runnable_config(config)
     # search_api = SearchAPI(get_config_value(configurable.search_api))
     # search_tools = await get_search_tool(search_api)
     search_tools = [url_crawl]
-    # tools.extend(search_tools)
+    tools.extend(search_tools)
 
     print(f"Tools: {tools}")
 

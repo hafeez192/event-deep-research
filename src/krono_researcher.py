@@ -12,9 +12,6 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import Literal
 from langgraph.graph.state import RunnableConfig
 import asyncio
-import json
-import re
-from langgraph.pregel.main import BaseModel
 from langgraph.types import Command
 
 from src.configuration import Configuration
@@ -24,7 +21,7 @@ from src.prompts import (
     lead_researcher_prompt,
     research_system_prompt,
 )
-from src.utils import get_all_tools, get_api_key_for_model, reflect_on_chronology
+from src.utils import get_all_tools, get_api_key_for_model, think_tool
 from src.state import (
     Chronology,
     ConductResearch,
@@ -55,7 +52,7 @@ async def supervisor(
         "api_key": get_api_key_for_model(configurable.research_model, config),
         "tags": ["langsmith:nostream"],
     }
-    person_researcher_tools = [ConductResearch, ResearchComplete, reflect_on_chronology]
+    person_researcher_tools = [ConductResearch, ResearchComplete, think_tool]
     person_to_research = state.get("person_to_research", "")
 
     if not person_to_research:
@@ -100,7 +97,7 @@ async def supervisor_tools(
     """Execute tools called by the supervisor, including research delegation and strategic thinking.
 
     This function handles three types of supervisor tool calls:
-    1. reflect_on_chronology - Strategic reflection that continues the conversation
+    1. think_tool - Strategic reflection that continues the conversation
     2. ConductResearch - Delegates research tasks to sub-researchers
     3. ResearchComplete - Signals completion of research phase
 
@@ -131,23 +128,23 @@ async def supervisor_tools(
     if exceeded_allowed_iterations or no_tool_calls or research_complete_tool_call:
         return Command(goto=END)
 
-    # Step 2: Process all tool calls together (both reflect_on_chronology and ConductResearch)
+    # Step 2: Process all tool calls together (both think_tool and ConductResearch)
     all_tool_messages = []
     update_payload = {"supervisor_messages": []}
 
-    # Handle reflect_on_chronology calls (strategic reflection)
-    reflect_on_chronology_calls = [
+    # Handle think_tool calls (strategic reflection)
+    think_tool_calls = [
         tool_call
         for tool_call in most_recent_message.tool_calls
-        if tool_call["name"] == "reflect_on_chronology"
+        if tool_call["name"] == "think_tool"
     ]
 
-    for tool_call in reflect_on_chronology_calls:
+    for tool_call in think_tool_calls:
         reflection_content = tool_call["args"]["reflection_and_plan"]
         all_tool_messages.append(
             ToolMessage(
                 content=f"Reflection recorded: {reflection_content}",
-                name="reflect_on_chronology",
+                name="think_tool",
                 tool_call_id=tool_call["id"],
             )
         )
@@ -231,6 +228,7 @@ async def researcher(
     messages = [SystemMessage(content=research_system_prompt)] + state.get(
         "researcher_messages", []
     )
+    print("MESSAGES INVOKED WHEN CALLING RESEARCHER (BING TOOLS)", len(messages))
     response = await research_model.ainvoke(messages)
     # Step 4: Update state and proceed to tool execution
     return Command(
@@ -258,7 +256,7 @@ async def researcher_tools(
     """Execute tools called by the researcher, including search tools and strategic thinking.
 
     This function handles various types of researcher tool calls:
-    1. reflect_on_chronology - Strategic reflection that continues the research conversation
+    1. think_tool - Strategic reflection that continues the research conversation
     2. Search tools (tavily_search, web_search) - Information gathering
     3. MCP tools - External tool integrations
     4. ResearchComplete - Signals completion of individual research task
@@ -316,7 +314,7 @@ async def researcher_tools(
         # End research and proceed to compression
         return Command(
             goto="compress_research",
-            update={"researcher_messages": {"value": tool_outputs, "type": "override"}},
+            update={"researcher_messages": {"value": tool_outputs}},
         )
 
     # Continue research loop with tool results
