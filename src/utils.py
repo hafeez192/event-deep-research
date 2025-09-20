@@ -1,8 +1,6 @@
 import asyncio
-import re
 from typing import List
 
-import requests
 import tiktoken  # You might need to run: pip install tiktoken
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import (
@@ -16,51 +14,12 @@ from src.state import ResearchComplete
 # Assume you have a way to get your model instance
 # This should be a model that supports tool calling, like GPT-4, Claude 3, etc.
 
-configurable_model = init_chat_model(temperature=0, model="ollama:gpt-oss:latest")
+model_for_tools = init_chat_model(temperature=0, model="ollama:gpt-oss:latest")
+model_for_big_queries = init_chat_model(temperature=0, model="ollama:gemma3:12b")
 structured_model = init_chat_model(temperature=0, model="ollama:llama3.1:latest")
-FIRECRAWL_API_URL = "http://localhost:3002/v0/scrape"
-
 
 # Assume you have your tools defined somewhere
 from langchain_core.tools import tool
-
-
-@tool
-def url_crawl(url: str) -> str:
-    """Crawls a URL and returns its content. For this example, returns dummy text."""
-    # print(f"--- FAKE CRAWLING: {url} ---")
-    # if "wikipedia" in url:
-    #     return "Albert Einstein was a German-born theoretical physicist... (long text, 2000 words)... In 1905, he published four groundbreaking papers."
-    # elif "britannica" in url:
-    #     return "Albert Einstein, (born March 14, 1879, Ulm, Württemberg, Germany... (long text, 2500 words)... He received the Nobel Prize for Physics in 1921."
-    # return "No content found."
-    content = scrape_page_content(url)
-    return remove_markdown_links(content)
-
-
-def scrape_page_content(url):
-    """Scrapes URL using Firecrawl API and returns Markdown content."""
-    try:
-        response = requests.post(
-            FIRECRAWL_API_URL,
-            json={
-                "url": url,
-                "pageOptions": {"onlyMainContent": True},
-                "formats": ["markdown"],
-            },
-            headers={"Content-Type": "application/json"},
-            timeout=30,
-        )
-        response.raise_for_status()
-        data = response.json()
-        return data.get("data", {}).get("markdown")
-    except requests.exceptions.RequestException:
-        return None
-
-
-def remove_markdown_links(markdown_text):
-    """Removes Markdown links, keeping only display text."""
-    return re.sub(r"\[(.*?)\]\(.*?\)", r"\1", markdown_text)
 
 
 @tool
@@ -68,6 +27,14 @@ def think_tool(reflection_and_plan: str) -> str:
     """A tool for the agent to reflect on its findings and plan the next step."""
     print(f"--- AGENT REFLECTION ---\n{reflection_and_plan}\n----------------------")
     return reflection_and_plan
+
+
+@tool
+async def url_crawl(url: str) -> str:  ## REPLACE WITH SUBGRAPH
+    """A tool for the agent to crawl a URL and return the content."""
+    from src.url_crawler.utils import url_crawl as actual_url_crawl
+
+    return await actual_url_crawl(url)
 
 
 async def get_all_tools(config: RunnableConfig):

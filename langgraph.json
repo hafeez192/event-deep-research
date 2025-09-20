@@ -1,7 +1,8 @@
 {
   "dockerfile_lines": [],
   "graphs": {
-    "kronologs_researcher": "./src/index.py:app"
+    "kronologs_researcher": "./src/index.py:app",
+    "url_crawler": "./src/url_crawler/index.py:graph"
   },
   "python_version": "3.12",
   "env": ".env",

@@ -14,7 +14,6 @@ from langgraph.graph.state import RunnableConfig
 from langgraph.types import Command
 
 from src.prompts import (
-    CREATE_EVENT_SUMMARY_PROMPT,
     compress_research_system_prompt,
     research_system_prompt,
 )
@@ -25,10 +24,10 @@ from src.state import (
     ResearcherState,
 )
 from src.utils import (
-    configurable_model,
     count_tokens,
     execute_tool_safely,
     get_all_tools,
+    model_for_tools,
     structured_model,
     url_crawl,
 )
@@ -55,7 +54,7 @@ async def researcher(
     ] + messages
 
     tools = await get_all_tools(config)
-    research_model = configurable_model.bind_tools(tools)
+    research_model = model_for_tools.bind_tools(tools)
 
     messages_token_count = count_tokens(messages)
     print("MESSAGES TOKEN COUNT", messages_token_count)
@@ -142,15 +141,44 @@ async def researcher_tools(
 
 
 async def update_event_summary(state: ResearcherState, result: str) -> str:
-    """Updates the event summary with the new result."""
-    prompt = CREATE_EVENT_SUMMARY_PROMPT.format(
-        historical_figure=state.get("historical_figure", ""),
-        previous_events_summary=state.get("event_summary", ""),
-        new_text=result,
-    )
-    response = await configurable_model.ainvoke(prompt)
+    """Chunks large text, extracts events in parallel, and consolidates them
+    with the previous summary.
+    """
+    # historical_figure = state.get("historical_figure", "")
+    # previous_summary = state.get("event_summary", "")
+    # new_text = result
 
-    return response
+    # # 1. Chunk the large input text
+    # text_chunks = chunk_text_by_tokens(new_text)
+
+    # # 2. Extract events from each chunk in parallel
+    # extraction_tasks = [
+    #     extract_events_from_chunk(historical_figure, chunk) for chunk in text_chunks
+    # ]
+    # extracted_results = await asyncio.gather(*extraction_tasks)
+
+    # # 3. Filter out empty responses and combine new events
+    # new_events_list = [
+    #     res
+    #     for res in extracted_results
+    #     if "no biographical information found" not in res.lower() and res.strip()
+    # ]
+
+    # if not new_events_list:
+    #     return previous_summary
+
+    # all_new_events_text = "\n\n".join(new_events_list)
+
+    # # 4. Consolidate new events with the previous summary
+    # consolidation_prompt = CONSOLIDATE_SUMMARY_PROMPT.format(
+    #     historical_figure=historical_figure,
+    #     newly_extracted_events=all_new_events_text,
+    #     previous_events_summary=previous_summary,
+    # )
+
+    # final_summary = await model_for_big_queries.ainvoke(consolidation_prompt)
+
+    return "final_summary"
 
 
 async def compress_research(state: ResearcherState, config: RunnableConfig):
