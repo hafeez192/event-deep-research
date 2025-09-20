@@ -51,19 +51,6 @@ class SupervisorState(SupervisorStateInput):
     supervisor_messages: Annotated[list[MessageLikeRepresentation], override_reducer]
 
 
-# class ResearcherState(TypedDict):
-#     """State for individual researchers conducting research."""
-
-#     researcher_messages: Annotated[list[MessageLikeRepresentation], override_reducer]
-#     think_content: str
-#     historical_figure: str
-#     tool_call_iterations: int = 0
-#     tool_calls: List[ToolCall]
-#     person_to_research: str
-#     compressed_research: str
-#     raw_notes: str
-
-
 class ChronologyDate(BaseModel):
     """A structured representation of a date for a chronological event."""
 
@@ -113,3 +100,4 @@ class ResearcherState(TypedDict):
     tool_call_iterations: int
     event_summary: str
     compressed_research: list[ChronologyEvent] | None
+    raw_notes: dict[str, str]
