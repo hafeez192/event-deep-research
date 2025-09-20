@@ -20,10 +20,13 @@ from new_graph.prompts import (
 )
 from new_graph.state import (
     Chronology,
+    InputResearcherState,
+    ResearcherOutputState,
     ResearcherState,
 )
 from new_graph.utils import (
     configurable_model,
+    count_tokens,
     execute_tool_safely,
     get_all_tools,
     structured_model,
@@ -53,6 +56,9 @@ async def researcher(
 
     tools = await get_all_tools(config)
     research_model = configurable_model.bind_tools(tools)
+
+    messages_token_count = count_tokens(messages)
+    print("MESSAGES TOKEN COUNT", messages_token_count)
     response = await research_model.ainvoke(messages)
 
     return Command(
@@ -183,7 +189,11 @@ async def compress_research(state: ResearcherState, config: RunnableConfig):
 
 # --- 4. Define the Graph ---
 
-builder = StateGraph(ResearcherState)
+builder = StateGraph(
+    ResearcherState,
+    input_schema=InputResearcherState,
+    output_schema=ResearcherOutputState,
+)
 
 # Add the four nodes
 builder.add_node("researcher", researcher)

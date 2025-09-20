@@ -91,11 +91,16 @@ class ResearcherOutputState(TypedDict):
     compressed_research: list[ChronologyEvent]
 
 
-class ResearcherState(TypedDict):
+class InputResearcherState(TypedDict):
+    """Input state for individual researchers conducting research."""
+
+    historical_figure: str
+
+
+class ResearcherState(InputResearcherState):
     """Defines the structure of the agent's state."""
 
     messages: Annotated[list[MessageLikeRepresentation], override_reducer]
-    historical_figure: str
     retrieved_documents: List[dict]  # Each dict: {"source": str, "content": str}
     tool_call_iterations: int
     event_summary: str

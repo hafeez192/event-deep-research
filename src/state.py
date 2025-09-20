@@ -1,7 +1,7 @@
 import operator
-from typing import Annotated, List, Optional, Sequence
-from langchain_core.messages import MessageLikeRepresentation, ToolCall, ToolMessage
-from langgraph.graph import add_messages
+from typing import Annotated, List
+
+from langchain_core.messages import MessageLikeRepresentation, ToolCall
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
@@ -67,8 +67,8 @@ class ResearcherState(TypedDict):
 class ChronologyDate(BaseModel):
     """A structured representation of a date for a chronological event."""
 
-    year: Optional[int] = Field(None, description="The year of the event.")
-    note: Optional[str] = Field(
+    year: int | None = Field(None, description="The year of the event.")
+    note: str | None = Field(
         None,
         description="Adds extra information to the date (month, day, range...)",
     )
@@ -84,7 +84,7 @@ class ChronologyEvent(BaseModel):
         description="A concise description of the event, containing the key details from the research.",
     )
     date: ChronologyDate = Field(..., description="The structured date of the event.")
-    location: Optional[str] = Field(
+    location: str | None = Field(
         None,
         description="The geographical location where the event occurred, if mentioned.",
     )
