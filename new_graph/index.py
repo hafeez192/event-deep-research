@@ -20,7 +20,9 @@ from new_graph.state import (
 )
 from new_graph.utils import (
     configurable_model,
+    execute_tool_safely,
     get_all_tools,
+    url_crawl,
 )
 
 load_dotenv()
@@ -59,7 +61,7 @@ async def researcher(
 
 async def researcher_tools(
     state: ResearcherState, config: RunnableConfig
-) -> Command[Literal["researcher"]]:
+) -> Command[Literal["researcher", "__end__"]]:
     """Node 2: The "Worker". Executes tools and always proceeds to the processing step."""
     print("\n--- 🛠️ EXECUTING TOOLS ---")
     most_recent_message = state["messages"][-1]
@@ -69,7 +71,7 @@ async def researcher_tools(
         not isinstance(most_recent_message, AIMessage)
         or not most_recent_message.tool_calls
     ):
-        return Command(goto="researcher")  # Go back if no tools to execute
+        return Command(goto="__end__")  # Go back if no tools to execute
 
     # Step 2: Process all tool calls together (both think_tool and url_crawl)
     all_tool_messages = []
@@ -99,10 +101,10 @@ async def researcher_tools(
     ]
 
     for tool_call in url_crawl_calls:
-        url = tool_call["args"]["url"]
+        result = await execute_tool_safely(url_crawl, tool_call["args"], config)
         all_tool_messages.append(
             ToolMessage(
-                content=f"Url crawled: {url}",
+                content=f"Url crawled: {result}",
                 name="url_crawl",
                 tool_call_id=tool_call["id"],
             )
