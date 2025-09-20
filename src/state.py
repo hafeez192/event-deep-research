@@ -1,7 +1,7 @@
 import operator
 from typing import Annotated, List
 
-from langchain_core.messages import MessageLikeRepresentation, ToolCall
+from langchain_core.messages import MessageLikeRepresentation
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
@@ -51,19 +51,6 @@ class SupervisorState(SupervisorStateInput):
     supervisor_messages: Annotated[list[MessageLikeRepresentation], override_reducer]
 
 
-class ResearcherState(TypedDict):
-    """State for individual researchers conducting research."""
-
-    researcher_messages: Annotated[list[MessageLikeRepresentation], override_reducer]
-    think_content: str
-    historical_figure: str
-    tool_call_iterations: int = 0
-    tool_calls: List[ToolCall]
-    person_to_research: str
-    compressed_research: str
-    raw_notes: str
-
-
 class ChronologyDate(BaseModel):
     """A structured representation of a date for a chronological event."""
 
@@ -102,3 +89,20 @@ class ResearcherOutputState(TypedDict):
     """Output state for individual researchers conducting research."""
 
     compressed_research: list[ChronologyEvent]
+
+
+class InputResearcherState(TypedDict):
+    """Input state for individual researchers conducting research."""
+
+    historical_figure: str
+
+
+class ResearcherState(InputResearcherState):
+    """Defines the structure of the agent's state."""
+
+    messages: Annotated[list[MessageLikeRepresentation], override_reducer]
+    retrieved_documents: List[dict]  # Each dict: {"source": str, "content": str}
+    tool_call_iterations: int
+    event_summary: str
+    compressed_research: list[ChronologyEvent] | None
+    raw_notes: dict[str, str]

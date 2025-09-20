@@ -13,18 +13,18 @@ from langgraph.graph import START, StateGraph
 from langgraph.graph.state import RunnableConfig
 from langgraph.types import Command
 
-from new_graph.prompts import (
+from src.prompts import (
     CREATE_EVENT_SUMMARY_PROMPT,
     compress_research_system_prompt,
     research_system_prompt,
 )
-from new_graph.state import (
+from src.state import (
     Chronology,
     InputResearcherState,
     ResearcherOutputState,
     ResearcherState,
 )
-from new_graph.utils import (
+from src.utils import (
     configurable_model,
     count_tokens,
     execute_tool_safely,
