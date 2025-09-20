@@ -1,11 +1,11 @@
 # src/krono_researcher.py
 
-from typing import List
+import asyncio
+
 from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import (
     HumanMessage,
-    MessageLikeRepresentation,
     SystemMessage,
     ToolMessage,
     filter_messages,
@@ -13,7 +13,6 @@ from langchain_core.messages import (
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import BaseMessage, Literal
 from langgraph.graph.state import RunnableConfig
-import asyncio
 from langgraph.types import Command
 
 from src.configuration import Configuration
@@ -23,7 +22,6 @@ from src.prompts import (
     lead_researcher_prompt,
     research_system_prompt,
 )
-from src.utils import get_all_tools, get_api_key_for_model, think_tool
 from src.state import (
     Chronology,
     ConductResearch,
@@ -33,6 +31,7 @@ from src.state import (
     SupervisorState,
     SupervisorStateInput,
 )
+from src.utils import get_all_tools, get_api_key_for_model, think_tool
 
 load_dotenv()
 
@@ -202,7 +201,6 @@ async def researcher(
     state: ResearcherState, config: RunnableConfig
 ) -> Command[Literal["researcher_tools"]]:
     """Individual researcher that conducts focused research on specific topics."""
-
     configurable = Configuration.from_runnable_config(config)
     tools = await get_all_tools(config)
     if len(tools) == 0:
@@ -384,8 +382,7 @@ async def researcher_tools(
 
 
 async def compress_research(state: ResearcherState, config: RunnableConfig):
-    """
-    Extracts chronological events from research findings and structures them.
+    """Extracts chronological events from research findings and structures them.
 
     This function processes all research messages, identifies key life events
     of the subject, and formats them into a structured list of ChronologyEvent objects.

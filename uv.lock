@@ -127,6 +127,7 @@ dependencies = [
     { name = "pandas" },
     { name = "python-dotenv" },
     { name = "tavily-python" },
+    { name = "tiktoken" },
 ]
 
 [package.metadata]
@@ -142,6 +143,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.3.2" },
     { name = "python-dotenv", specifier = ">=0.9.9" },
     { name = "tavily-python", specifier = ">=0.7.12" },
+    { name = "tiktoken", specifier = ">=0.11.0" },
 ]
 
 [[package]]
