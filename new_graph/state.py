@@ -46,15 +46,6 @@ def override_reducer(current_value, new_value):
         return operator.add(current_value, new_value)
 
 
-class ResearcherState(TypedDict):
-    """Defines the structure of the agent's state."""
-
-    messages: Annotated[list[MessageLikeRepresentation], override_reducer]
-    historical_figure: str
-    retrieved_documents: List[dict]  # Each dict: {"source": str, "content": str}
-    tool_call_iterations: int
-
-
 class SupervisorState(SupervisorStateInput):
     research_iterations: int = 0
     supervisor_messages: Annotated[list[MessageLikeRepresentation], override_reducer]
@@ -111,3 +102,14 @@ class ResearcherOutputState(TypedDict):
     """Output state for individual researchers conducting research."""
 
     compressed_research: list[ChronologyEvent]
+
+
+class ResearcherState(TypedDict):
+    """Defines the structure of the agent's state."""
+
+    messages: Annotated[list[MessageLikeRepresentation], override_reducer]
+    historical_figure: str
+    retrieved_documents: List[dict]  # Each dict: {"source": str, "content": str}
+    tool_call_iterations: int
+    event_summary: str
+    compressed_research: list[ChronologyEvent] | None

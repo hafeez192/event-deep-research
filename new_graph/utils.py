@@ -2,17 +2,21 @@ import asyncio
 from typing import List
 
 import tiktoken  # You might need to run: pip install tiktoken
+from langchain.chat_models import init_chat_model
 from langchain_core.messages import (
     BaseMessage,
 )
 from langchain_core.runnables import RunnableConfig
 
+from new_graph.state import ResearchComplete
+
 # --- Placeholder Functions (Replace with your actual implementations) ---
 # Assume you have a way to get your model instance
 # This should be a model that supports tool calling, like GPT-4, Claude 3, etc.
-from langchain_openai import ChatOpenAI
 
-configurable_model = ChatOpenAI(temperature=0, model="gpt-4-turbo")
+configurable_model = init_chat_model(temperature=0, model="ollama:gpt-oss:latest")
+structured_model = init_chat_model(temperature=0, model="ollama:llama3.1:latest")
+
 
 # Assume you have your tools defined somewhere
 from langchain_core.tools import tool
@@ -36,15 +40,9 @@ def think_tool(reflection_and_plan: str) -> str:
     return reflection_and_plan
 
 
-@tool
-def ResearchComplete(final_summary: str) -> str:
-    """Signals that research is complete."""
-    return f"Research is complete. Final summary: {final_summary}"
-
-
 async def get_all_tools(config: RunnableConfig):
     """Returns the list of available tools."""
-    return [url_crawl, think_tool, ResearchComplete]
+    return [url_crawl, think_tool, tool(ResearchComplete)]
 
 
 async def execute_tool_safely(tool_to_call, args, config):
