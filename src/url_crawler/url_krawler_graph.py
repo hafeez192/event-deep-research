@@ -101,7 +101,7 @@ async def divide_content_into_chunks(
 
 async def extract_events_from_chunks(
     state: UrlCrawlerState,
-) -> Command[Literal["__end__"]]:
+) -> Command[Literal["merge_events"]]:
     historical_figure = state.get("historical_figure", "")
     chunks = state.get("chunks", [])
 
@@ -164,7 +164,17 @@ async def extract_events_from_chunks(
             chunks_with_categories.append({"content": chunk, "category": "UNKNOWN"})
             continue
 
-    return Command(goto=END, update={"chunks_with_categories": chunks_with_categories})
+    return Command(
+        goto="merge_events", update={"chunks_with_categories": chunks_with_categories}
+    )
+
+
+def merge_events(state: UrlCrawlerState) -> Command[Literal["__end__"]]:
+    chunks_with_categories = state.get("chunks_with_categories", [])
+    events = ""
+    for chunk_with_category in chunks_with_categories:
+        events += chunk_with_category["content"]
+    return Command(goto=END, update={"events": events})
 
 
 # How many nodes to build.
@@ -180,7 +190,8 @@ builder = StateGraph(UrlCrawlerState, input_schema=InputUrlCrawlerState)
 builder.add_node("scrape_content", scrape_content)
 builder.add_node("divide_content_into_chunks", divide_content_into_chunks)
 builder.add_node("extract_events_from_chunks", extract_events_from_chunks)
+builder.add_node("merge_events", merge_events)
 # builder.add_node("return_events", return_events)
 builder.add_edge(START, "scrape_content")
 
-graph = builder.compile()
+url_crawler_graph = builder.compile()

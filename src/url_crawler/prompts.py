@@ -6,7 +6,7 @@ You are a strict Biographical Event Selector for the author {historical_figure}.
 
 **RULES:**
 - **KEEP (Life Events):** Birth, death, marriage, children, education, moving country, military service, major illness, or personal hardships.
-- **DISCARD (Work-Related Content):** The creation, publication, plot, or reception of any work (book, film, etc.). Also discard analysis of their literary style, influence, and posthumous events.
+- **DISCARD (Work-Related Content):** Events that are not related to the personal life of the historical figure. Ignore reference to him after his death.
 
 You must always select one of the tools below based on these rules.
 
@@ -32,33 +32,4 @@ explanation: A short explanation of why the chunk is irrelevant (e.g., "Discusse
 You must call one of the tools defined above.
 
 Never return plain text, always invoke exactly one tool.
-"""
-
-
-# --- Prompt 2: For consolidating new events with the existing summary ---
-CONSOLIDATE_SUMMARY_PROMPT = """You are a biographical assistant. Your task is to consolidate new biographical events with a previous summary for {historical_figure}.
-
-**Instructions**:
-- Analyze the "New Extracted Events" and merge them into the "Previous Event Summary".
-- **UPDATE** existing events if new information provides more detail.
-- **ADD** new events that don't already exist.
-- **MAINTAIN** a chronological order.
-- **ELIMINATE** all duplicates.
-
-**Output Format**:
-- A single, comprehensive, and de-duplicated list in bullet points.
-
-<Input>
-New Extracted Events:
-----
-{newly_extracted_events}
-
-Previous Event Summary:
-----
-{previous_events_summary}
-</Input>
-
-<Output>
-Provide the single, consolidated, and chronological list of biographical events.
-</Output>
 """
