@@ -5,7 +5,6 @@ from typing import Literal
 from dotenv import load_dotenv
 from langchain_core.messages import (
     AIMessage,
-    HumanMessage,
     SystemMessage,
     ToolMessage,
 )
@@ -14,7 +13,6 @@ from langgraph.graph.state import RunnableConfig
 from langgraph.types import Command
 
 from src.prompts import (
-    CONSOLIDATE_SUMMARY_PROMPT,
     compress_research_system_prompt,
     research_system_prompt,
 )
@@ -28,7 +26,6 @@ from src.url_crawler.url_krawler_graph import url_crawler_graph
 from src.utils import (
     count_tokens,
     get_all_tools,
-    model_for_big_queries,
     model_for_tools,
     structured_model,
 )
@@ -123,8 +120,8 @@ async def researcher_tools(
         result = await url_crawler_graph.ainvoke(
             {"url": url, "historical_figure": state["historical_figure"]}
         )
-        event_summary = await update_event_summary(state, result)
-        raw_notes[url] = result
+        event_summary = result["events"]
+        raw_notes[url] = result["content"]
         all_tool_messages.append(
             ToolMessage(
                 content=f"Url crawled: {url}",
@@ -141,24 +138,6 @@ async def researcher_tools(
             "raw_notes": raw_notes,
         },
     )
-
-
-async def update_event_summary(state: ResearcherState, result: str) -> str:
-    """Chunks large text, extracts events in parallel, and consolidates them
-    with the previous summary.
-    """
-    historical_figure = state.get("historical_figure", "")
-    previous_summary = state.get("event_summary", "")
-
-    # 4. Consolidate new events with the previous summary
-    consolidation_prompt = CONSOLIDATE_SUMMARY_PROMPT.format(
-        historical_figure=historical_figure,
-        newly_extracted_events=result,
-        previous_events_summary=previous_summary,
-    )
-
-    final_summary = await model_for_big_queries.ainvoke(consolidation_prompt)
-    return final_summary
 
 
 async def compress_research(state: ResearcherState, config: RunnableConfig):
@@ -178,16 +157,14 @@ async def compress_research(state: ResearcherState, config: RunnableConfig):
 
     structured_llm = structured_model.with_structured_output(Chronology)
 
-    messages = state.get("messages", [])
-    messages.append(
-        HumanMessage(
-            content=compress_research_system_prompt.format(
-                events_summary=state.get("event_summary", "")
-            )
-        )
+    # TODO: Add extra prompt and request so the events are in chronological order and cleaned. The last one is just for the json
+
+    prompt = compress_research_system_prompt.format(
+        events_summary=state.get("event_summary", "")
     )
 
-    response = await structured_llm.ainvoke(messages)
+    print("PROMPT", prompt)
+    response = await structured_llm.ainvoke(prompt)
 
     return {
         # Return an empty list to match the required type for 'compressed_research'

@@ -1,5 +1,5 @@
 research_system_prompt = """
-You are a research assistant. Your task is to research a historical figure by extracting key life events from Wikipedia and Britannica.
+You are a research assistant. Your task is to research a historical figure by extracting key life events from Wikipedia.
 <Instructions>
 
 Historical figure: {historical_figure}
@@ -12,9 +12,8 @@ DO NOT MAKE UP ANY INFORMATION, ONLY USE THE MESSAGES AND THE TOOL OUTPUTS TO MA
 </Instructions>
 
 <Available Tools>
-* **url_crawl**: **CRITICAL**: This tool only accepts URLs from Wikipedia and Britannica. No other websites are allowed.
+* **url_crawl**: **CRITICAL**: This tool only accepts URLs from Wikipedia. No other websites are allowed.
 * **Wikipedia format**: `https://en.wikipedia.org/wiki/name_lastname`
-* **Britannica format**: `https://www.britannica.com/biography/name-lastname`
 You may not search the same domain (e.g., `wikipedia.org`) more than once.
 
 * **think_tool**: IMPORTANT! Use for reflection after a search to analyze findings and plan your next step.
@@ -25,10 +24,42 @@ DO NOT EVER provide the list of events yourself.
 
 <Hard Limits>
 You MUST stop researching and call `ResearchComplete` when **ANY** of the following conditions are met:
-* You have successfully retrieved information from both a Wikipedia and a Britannica source.
+* You have successfully retrieved information from Wikipedia.
 * You have made a total of 2 calls to the `url_crawl` tool.
 </Hard Limits>
 """
+
+# research_system_prompt = """
+# You are a research assistant. Your task is to research a historical figure by extracting key life events from Wikipedia and Britannica.
+# <Instructions>
+
+# Historical figure: {historical_figure}
+
+# You must operate in a strict **search -> reflect** loop.
+# Call the url_crawl tool to gather information.
+# CRITICAL: Immediately after, you MUST call think_tool by itself to analyze the results and decide your next action (either searching again or finishing).
+# Do not call think_tool in parallel with other tools.
+# DO NOT MAKE UP ANY INFORMATION, ONLY USE THE MESSAGES AND THE TOOL OUTPUTS TO MAKE YOUR DECISIONS.
+# </Instructions>
+
+# <Available Tools>
+# * **url_crawl**: **CRITICAL**: This tool only accepts URLs from Wikipedia and Britannica. No other websites are allowed.
+# * **Wikipedia format**: `https://en.wikipedia.org/wiki/name_lastname`
+# * **Britannica format**: `https://www.britannica.com/biography/name-lastname`
+# You may not search the same domain (e.g., `wikipedia.org`) more than once.
+
+# * **think_tool**: IMPORTANT! Use for reflection after a search to analyze findings and plan your next step.
+
+# * **ResearchComplete**: When research is finished, you must call this tool with no arguments.
+# DO NOT EVER provide the list of events yourself.
+# </Available Tools>
+
+# <Hard Limits>
+# You MUST stop researching and call `ResearchComplete` when **ANY** of the following conditions are met:
+# * You have successfully retrieved information from both a Wikipedia and a Britannica source.
+# * You have made a total of 2 calls to the `url_crawl` tool.
+# </Hard Limits>
+# """
 
 
 CREATE_EVENT_SUMMARY_PROMPT = """You are a biographical assistant. Your task is to extract and consolidate key life events from the provided text about {historical_figure}.
@@ -77,11 +108,12 @@ compress_research_system_prompt = """You are an expert biographical archivist. Y
 
 <Task>
 You must identify every event that can be associated with a specific date or time period. For each event, you will extract its name, a detailed description, its date, and location. You must output this information as a structured JSON object.
+If a date is not present but it's an imported event to the life of the person, add it into chronological order.
 </Task>
 
 <Guidelines>
-1.  Focus exclusively on chronological events (e.g., births, deaths, publications, moves, new jobs, significant personal events).
-2.  Ignore all non-chronological information, such as thematic analysis, character descriptions, or literary criticism. If the information does not have a date, do not include it.
+1.  Focus exclusively on chronological events (e.g., births, early life,  deaths, publications, moves, new jobs, significant personal events).
+2.  Ignore all information that is not relevant to the life of the person.
 3.  For the `name` field, create a short, descriptive title for the event.
 4.  For the `description` field, provide a clear and concise summary of what happened.
 5.  For the `date` field, populate `year`, `month`, and `day` whenever possible. If a date is ambiguous (e.g., "summer 1922" or "early in the year"), use the `note` field to capture that detail.
@@ -98,26 +130,20 @@ CRITICAL: You must only return the structured JSON output. Do not add any commen
 
 
 # --- Prompt 2: For consolidating new events with the existing summary ---
-CONSOLIDATE_SUMMARY_PROMPT = """You are a biographical assistant. Your task is to consolidate new biographical events with a previous summary for {historical_figure}.
+CONSOLIDATE_SUMMARY_PROMPT = """You are a biographical assistant. Your task is to convert blocks of text that contains events of a person into single events where the date, description of the event, location of the event are included for {historical_figure}.
 
 **Instructions**:
-- Analyze the "New Extracted Events" and merge them into the "Previous Event Summary".
-- **UPDATE** existing events if new information provides more detail.
-- **ADD** new events that don't already exist.
+- Analyze the "New Extracted Events" and convert them into single events where the date, description of the event, location of the event are included.
 - **MAINTAIN** a chronological order.
-- **ELIMINATE** all duplicates.
 
 **Output Format**:
-- A single, comprehensive, and de-duplicated list in bullet points.
+- A single, comprehensive, and chronological list in bullet points.
 
 <Input>
 New Extracted Events:
 ----
 {newly_extracted_events}
 
-Previous Event Summary:
-----
-{previous_events_summary}
 </Input>
 
 <Output>

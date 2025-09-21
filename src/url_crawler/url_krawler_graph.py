@@ -5,13 +5,14 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 from pydantic import BaseModel, Field
 
+from src.prompts import CONSOLIDATE_SUMMARY_PROMPT
 from src.url_crawler.prompts import EXTRACT_EVENTS_PROMPT
 from src.url_crawler.utils import (
     chunk_text_by_tokens,
     count_tokens,
     url_crawl,
 )
-from src.utils import model_for_tools
+from src.utils import model_for_big_queries, model_for_tools
 
 
 class RelevantChunk(BaseModel):
@@ -67,6 +68,11 @@ class UrlCrawlerState(InputUrlCrawlerState):
     chunks_with_categories: list[ChunkWithCategory]
 
 
+class OutputUrlCrawlerState(UrlCrawlerState):
+    events: str
+    content: str
+
+
 ## Build the nodes to do the folloing.
 # 1. url is received and all the content is scraped using markdown/html
 # 2. the content is divided into small chunks separated by tokens. Or maybe separated by h2 html tags??
@@ -114,7 +120,7 @@ async def extract_events_from_chunks(
 
     # first_two_chunks = chunks[:2]
     chunks_with_categories = []
-    for chunk in chunks:
+    for chunk in chunks[:2]:
         prompt = EXTRACT_EVENTS_PROMPT.format(
             historical_figure=historical_figure, text_chunk=chunk
         )
@@ -170,12 +176,33 @@ async def extract_events_from_chunks(
     )
 
 
-def merge_events(state: UrlCrawlerState) -> Command[Literal["__end__"]]:
+async def merge_events(state: UrlCrawlerState) -> Command[Literal["__end__"]]:
     chunks_with_categories = state.get("chunks_with_categories", [])
+    raw_content = ""
     events = ""
     for chunk_with_category in chunks_with_categories:
-        events += chunk_with_category["content"]
+        event_summary = await update_event_summary(
+            state, chunk_with_category["content"]
+        )
+        events += event_summary
+        raw_content += chunk_with_category["origianl_chunk"]
+
     return Command(goto=END, update={"events": events})
+
+
+async def update_event_summary(state: UrlCrawlerState, chunk_content: str) -> str:
+    """Chunks large text, extracts events in parallel, and consolidates them
+    with the previous summary.
+    """
+    historical_figure = state.get("historical_figure", "")
+
+    # 4. Consolidate new events with the previous summary
+    consolidation_prompt = CONSOLIDATE_SUMMARY_PROMPT.format(
+        historical_figure=historical_figure, newly_extracted_events=chunk_content
+    )
+
+    final_summary = await model_for_big_queries.ainvoke(consolidation_prompt)
+    return final_summary.content
 
 
 # How many nodes to build.
@@ -186,7 +213,9 @@ def merge_events(state: UrlCrawlerState) -> Command[Literal["__end__"]]:
 # 5. Return the events
 
 
-builder = StateGraph(UrlCrawlerState, input_schema=InputUrlCrawlerState)
+builder = StateGraph(
+    UrlCrawlerState, input_schema=InputUrlCrawlerState, output_schema=UrlCrawlerState
+)
 
 builder.add_node("scrape_content", scrape_content)
 builder.add_node("divide_content_into_chunks", divide_content_into_chunks)
