@@ -2,24 +2,18 @@ import asyncio
 from typing import List
 
 import tiktoken  # You might need to run: pip install tiktoken
-from langchain.chat_models import init_chat_model
 from langchain_core.messages import (
     BaseMessage,
 )
 from langchain_core.runnables import RunnableConfig
+from langchain_core.tools import tool
 
+from src.llm_service import get_llm
 from src.state import ResearchComplete
 
-# --- Placeholder Functions (Replace with your actual implementations) ---
-# Assume you have a way to get your model instance
-# This should be a model that supports tool calling, like GPT-4, Claude 3, etc.
-
-model_for_tools = init_chat_model(temperature=0, model="ollama:gpt-oss:latest")
-model_for_big_queries = init_chat_model(temperature=0, model="ollama:gemma3:12b")
-structured_model = init_chat_model(temperature=0, model="ollama:llama3.1:latest")
-
-# Assume you have your tools defined somewhere
-from langchain_core.tools import tool
+model_for_tools = get_llm("ollama:gpt-oss:latest")
+model_for_big_queries = get_llm("ollama:gemma3:12b")
+structured_model = get_llm("ollama:llama3.1:latest")
 
 
 @tool

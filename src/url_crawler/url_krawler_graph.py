@@ -1,6 +1,5 @@
 from typing import Literal, TypedDict
 
-from langchain.chat_models import init_chat_model
 from langchain_core.tools import tool
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
@@ -12,8 +11,7 @@ from src.url_crawler.utils import (
     count_tokens,
     url_crawl,
 )
-
-model_for_tools = init_chat_model(temperature=0, model="ollama:gpt-oss:latest")
+from src.utils import model_for_tools
 
 
 class RelevantChunk(BaseModel):
@@ -121,7 +119,6 @@ async def extract_events_from_chunks(
             historical_figure=historical_figure, text_chunk=chunk
         )
         print("Extracting chunk ", chunk[0:10])
-        print("Prompt token number: ", count_tokens(prompt))
         response = await model_tools.ainvoke(prompt)
 
         tool_call_name = ""
