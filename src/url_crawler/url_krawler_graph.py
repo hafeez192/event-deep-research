@@ -17,32 +17,36 @@ model_for_tools = init_chat_model(temperature=0, model="ollama:gpt-oss:latest")
 
 
 class RelevantChunk(BaseModel):
-    """A chunk of text where the main part is relevant to the biography of the historical figure. Important successes in it's life. The content is all of the chunk"""
+    """Use this when the VAST MAJORITY (e.g., >80%) of the chunk describes significant
+    personal life events of the historical figure. The entire chunk can be kept.
+    """
 
     explanation: str = Field(
-        description="A short explanation of why the chunk is relevant"
+        description="A short explanation of why the entire chunk is relevant to the person's life story."
     )
 
 
 class PartialChunk(BaseModel):
-    """A chunk of text where the main part is relevant to the biography of the historical figure. Important successes in it's life
-
-    Args:
-        relevant_content: The content that is relevant to the biography of the historical figure. Discard the Rest
+    """Use this when the chunk is a MIX of personal life events and irrelevant details
+    (like plot summaries of their work, literary criticism, or general historical context).
+    You will need to extract ONLY the parts about their life.
     """
 
-    relevant_content: str
-    death_date: str
+    relevant_content: str = Field(
+        description="An extraction of ALL sentences or phrases describing personal life events. Combine them into a coherent paragraph. Omit all work-related content."
+    )
     explanation: str = Field(
-        description="A short explanation of why the chunk is partially relevent"
+        description="A short explanation of what was kept (life events) and what was discarded (e.g., work details)."
     )
 
 
 class IrrelevantChunk(BaseModel):
-    """A chunk of text where the main part is irrelevant to the biography of the historical figure."""
+    """Use this when the chunk is ENTIRELY about the person's works, literary analysis,
+    references to them after their death, or trivial details with no biographical importance.
+    """
 
     explanation: str = Field(
-        description="A short explanation of why the chunk is irrelevant"
+        description="A short explanation of why the chunk is irrelevant (e.g., 'Focuses only on literary criticism of their book.')."
     )
 
 

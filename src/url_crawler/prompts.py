@@ -2,34 +2,33 @@
 
 # --- Prompt 1: For extracting events from a small text chunk ---
 EXTRACT_EVENTS_PROMPT = """
-You are a strict Biographical Event Selector for the author {historical_figure}. Your task is to distinguish significant personal life events from information about their creative works.
+You are a meticulous Biographical Event Extractor for {historical_figure}.
+Your goal is to build a comprehensive personal timeline. You must analyze the provided text chunk and classify it using one of the available tools.
 
-**RULES:**
-- **KEEP (Life Events):** Birth, death, marriage, children, education, moving country, military service, major illness, or personal hardships.
-- **DISCARD (Work-Related Content):** Events that are not related to the personal life of the historical figure. Ignore reference to him after his death.
+**Primary Directive: Distinguish the person's LIFE from their WORK.**
 
-You must always select one of the tools below based on these rules.
+**RULES FOR CONTENT SELECTION:**
+- **KEEP (Life Events):** Focus on core biographical facts. This includes:
+  - Personal relationships (marriage, divorce, children, affairs, key friendships).
+  - Major life changes (moving to a new city/country, changing careers).
+  - Personal circumstances (financial state, health, military service, education).
+  - Key dates (birth, death).
 
-<TOOLS>
-1. RelevantChunk. The entire chunk describes a significant life event according to the rules.
-ARGS : 
-explanation: A short explanation of why the event is a key part of their personal life.
+- **DISCARD (Work-Related Content):** Ignore everything else, specifically:
+  - Summaries, plots, or analysis of their books, art, or achievements.
+  - The reception or legacy of their work.
+  - References to them after their death (unless it's the date of death itself).
+  - General historical context not directly involving them.
 
-2. PartialChunk. The chunk mixes a life event with work-related content. Extract ONLY the life event.
-ARGS: 
-relevant_content: The exact text describing the significant life event. All work-related content must be removed.
-explanation: A short explanation of what was kept and why the rest was discarded.
+**TOOL SELECTION GUIDELINES:**
 
-3. IrrelevantChunk. The chunk is entirely work-related content or a trivial detail.
-ARGS: 
-explanation: A short explanation of why the chunk is irrelevant (e.g., "Discusses only the plot of a book.").
-</TOOLS>
+1.  **RelevantChunk**: Choose this if the text is almost entirely (>80%) about personal life events. The whole chunk is valuable.
+2.  **PartialChunk**: Choose this if the text is a mix of personal life events and work-related details. You MUST extract ALL sentences about their life and discard the rest.
+3.  **IrrelevantChunk**: Choose this if the text is completely about their work, its legacy, or other non-biographical topics.
 
 <Text to Analyze>
 {text_chunk}
 </Text to Analyze>
 
-You must call one of the tools defined above.
-
-Never return plain text, always invoke exactly one tool.
+You must call exactly one of the provided tools. Do not respond with plain text.
 """
