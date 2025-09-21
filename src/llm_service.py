@@ -95,10 +95,3 @@ def get_llm(model_name: str, **kwargs: Any) -> LLMWithTemperatureCheck:
     """Get LLM service wrapped with temperature checking."""
     original_llm = init_chat_model(temperature=0, model=model_name, **kwargs)
     return LLMWithTemperatureCheck(original_llm)
-
-
-llm = get_llm("ollama:gpt-oss:latest")
-
-res = llm.invoke("explain how 1 + 1 = 2 in an difficult way[]")
-
-print("res", res)
