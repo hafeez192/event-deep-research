@@ -26,7 +26,6 @@ from src.state import (
 from src.url_crawler.url_krawler_graph import url_crawler_graph
 from src.utils import (
     count_tokens,
-    count_tokens_string,
     get_all_tools,
     model_for_big_queries,
     model_for_tools,
@@ -160,9 +159,6 @@ async def clean_and_order_events(
 
     event_summary = state.get("event_summary", "")
     prompt1 = step1_clean_and_order_prompt.format(events_summary=event_summary)
-    print("PROMPT 1", prompt1)
-    prompt_tokens = count_tokens_string(prompt1)
-    print("PROMPT TOKENS", prompt_tokens)
     # Invoke the first model to get a clean, ordered string of events
     cleaning_response = await model_for_big_queries.ainvoke(prompt1)
     cleaned_events_text = cleaning_response.content
