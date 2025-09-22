@@ -8,7 +8,7 @@ from langchain_core.messages import (
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
 
-from src.llm_service import get_llm
+from legacy.llm_service import get_llm
 
 model_for_tools = get_llm("ollama:gpt-oss:latest")
 model_for_big_queries = get_llm("ollama:gemma3:12b")
@@ -25,7 +25,7 @@ def think_tool(reflection_and_plan: str) -> str:
 @tool
 async def url_crawl(url: str) -> str:  ## REPLACE WITH SUBGRAPH
     """A tool for the agent to crawl a URL and return the content."""
-    from src.url_crawler.utils import url_crawl as actual_url_crawl
+    from legacy.url_crawler.utils import url_crawl as actual_url_crawl
 
     return await actual_url_crawl(url)
 

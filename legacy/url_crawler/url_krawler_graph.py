@@ -5,14 +5,14 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 from pydantic import BaseModel, Field
 
-from src.prompts import CONSOLIDATE_SUMMARY_PROMPT
-from src.url_crawler.prompts import EXTRACT_EVENTS_PROMPT
-from src.url_crawler.utils import (
+from legacy.prompts import CONSOLIDATE_SUMMARY_PROMPT
+from legacy.url_crawler.prompts import EXTRACT_EVENTS_PROMPT
+from legacy.url_crawler.utils import (
     chunk_text_by_tokens,
     count_tokens,
     url_crawl,
 )
-from src.utils import model_for_big_queries, model_for_tools
+from legacy.utils import model_for_big_queries, model_for_tools
 
 
 class RelevantChunk(BaseModel):

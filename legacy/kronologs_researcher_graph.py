@@ -12,19 +12,19 @@ from langgraph.graph import START, StateGraph
 from langgraph.graph.state import RunnableConfig
 from langgraph.types import Command
 
-from src.prompts import (
+from legacy.prompts import (
     research_system_prompt,
     step1_clean_and_order_prompt,
     step2_structure_events_prompt,
 )
-from src.state import (
+from legacy.state import (
     Chronology,
     InputResearcherState,
     ResearcherOutputState,
     ResearcherState,
 )
-from src.url_crawler.url_krawler_graph import url_crawler_graph
-from src.utils import (
+from legacy.url_crawler.url_krawler_graph import url_crawler_graph
+from legacy.utils import (
     count_tokens,
     get_all_tools,
     model_for_big_queries,
