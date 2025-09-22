@@ -1,21 +1,11 @@
 import asyncio
 import inspect
-import logging
 import subprocess
 import time
 from typing import Any
 
-try:
-    import psutil
-except ImportError:
-    psutil = None
-
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
-
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
 
 
 class LLMWithTemperatureCheck:
@@ -46,15 +36,15 @@ class LLMWithTemperatureCheck:
                 temp_value = float(temp_output.strip())
 
                 if temp_value == 40:  # buggy reading, retry
-                    logging.warning("Got temperature=40 (buggy). Retrying...")
+                    print("Got temperature=40 (buggy). Retrying...")
                     time.sleep(0.1)  # small delay before retry
                     continue
 
-                logging.info(f"Current temperature is: {temp_value}")
+                print(f"Current temperature is: {temp_value}")
                 return temp_value
 
             except (subprocess.SubprocessError, ValueError) as e:
-                logging.error(f"Error getting temperature: {e}")
+                print(f"Error getting temperature: {e}")
                 return 0  # Return a safe value if temperature check fails
 
     def __getattr__(self, name: str) -> Any:
@@ -69,7 +59,7 @@ class LLMWithTemperatureCheck:
                 while (
                     temp := self._get_cpu_temperature()
                 ) and temp > self.temp_threshold:
-                    logging.warning(
+                    print(
                         f"CPU temp high ({temp:.1f}°C). Waiting {self.wait_seconds}s..."
                     )
                     await asyncio.sleep(self.wait_seconds)
@@ -82,7 +72,7 @@ class LLMWithTemperatureCheck:
                 while (
                     temp := self._get_cpu_temperature()
                 ) and temp > self.temp_threshold:
-                    logging.warning(
+                    print(
                         f"CPU temp high ({temp:.1f}°C). Waiting {self.wait_seconds}s..."
                     )
                     time.sleep(self.wait_seconds)
