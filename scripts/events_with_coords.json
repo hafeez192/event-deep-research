@@ -1,25 +1,548 @@
 [
   {
-    "name": "Henry Miller's Birth",
-    "description": "Henry Valentine Miller was born in New York City, U.S.",
+    "name": "Birth of Henry Miller",
+    "description": "Born in Manhattan, New York City.",
     "date": {
       "year": 1891,
-      "note": "December 26"
+      "note": ""
     },
     "location": {
-      "name": "New York City, U.s.",
-      "lat": 40.7127281,
-      "lng": -74.0060152
-    },
-    "image": "image of henry miller.png"
+      "name": "Manhattan, New York City",
+      "lat": 40.7896239,
+      "lng": -73.9598939
+    }
   },
   {
-    "name": "Marriage to Beatrice Sylvas Wickens",
-    "description": "Henry Miller married Beatrice Sylvas Wickens.",
+    "name": "Moved to Williamsburg, Brooklyn",
+    "description": "Lived at 662 Driggs Avenue, Williamsburg, Brooklyn (≈ 9 years).",
+    "date": {
+      "year": 1909,
+      "note": "circa 1909-1917"
+    },
+    "location": {
+      "name": "Williamsburg, Brooklyn",
+      "lat": 40.714622,
+      "lng": -73.95345
+    }
+  },
+  {
+    "name": "Moved to Bushwick, Brooklyn",
+    "description": "Family moved to 1063 Decatur Street, Bushwick, Brooklyn.",
     "date": {
       "year": 1917,
-      "note": null
+      "note": ""
     },
-    "image": "image-about-marriage.png"
+    "location": {
+      "name": "Bushwick, Brooklyn",
+      "lat": 40.6942696,
+      "lng": -73.9187482
+    }
+  },
+  {
+    "name": "Married Beatrice Sylvas Wickens",
+    "description": "Married Beatrice Sylvas Wickens.",
+    "date": {
+      "year": 1917,
+      "note": ""
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Attended Eastern District High School",
+    "description": "Attended Eastern District High School; active with the Socialist Party of America.",
+    "date": {
+      "year": 1917,
+      "note": "circa 1917-1920"
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Birth of Barbara",
+    "description": "Daughter Barbara born.",
+    "date": {
+      "year": 1919,
+      "note": ""
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Started working at Western Union",
+    "description": "Began working at Western Union as personnel manager in the messenger department.",
+    "date": {
+      "year": 1920,
+      "note": ""
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Moved to Park Slope, Brooklyn",
+    "description": "Lived in an apartment at 244 6th Avenue, Park Slope, Brooklyn.",
+    "date": {
+      "year": 1920,
+      "note": "circa 1920-1924"
+    },
+    "location": {
+      "name": "Park Slope, Brooklyn",
+      "lat": 40.6701033,
+      "lng": -73.9859723
+    }
+  },
+  {
+    "name": "Divorced Beatrice Sylvas Wickens",
+    "description": "Divorced Beatrice Sylvas Wickens.",
+    "date": {
+      "year": 1923,
+      "note": ""
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Met June Mansfield",
+    "description": "Met June Mansfield (Juliet Edith Smerth) while still married to Beatrice.",
+    "date": {
+      "year": 1923,
+      "note": "circa 1923"
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Married June Mansfield",
+    "description": "Married June Mansfield.",
+    "date": {
+      "year": 1924,
+      "note": ""
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Quit Western Union",
+    "description": "Quit Western Union to dedicate himself to writing.",
+    "date": {
+      "year": 1924,
+      "note": ""
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Spent time in Paris with June",
+    "description": "Spent several months in Paris with June, financed by Freedman.",
+    "date": {
+      "year": 1928,
+      "note": ""
+    },
+    "location": {
+      "name": "Paris",
+      "lat": 48.8588897,
+      "lng": 2.320041
+    }
+  },
+  {
+    "name": "Moved to Paris unaccompanied",
+    "description": "Moved to Paris, France, unaccompanied.",
+    "date": {
+      "year": 1930,
+      "note": ""
+    },
+    "location": {
+      "name": "Paris",
+      "lat": 48.8588897,
+      "lng": 2.320041
+    }
+  },
+  {
+    "name": "Kronski died by suicide",
+    "description": "Kronski died by suicide; Miller suspected a sexual relationship between Kronski and June.",
+    "date": {
+      "year": 1930,
+      "note": "circa 1930"
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Employed by the Chicago Tribune Paris edition",
+    "description": "Employed by the Chicago Tribune Paris edition as proofreader.",
+    "date": {
+      "year": 1931,
+      "note": ""
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Began a relationship with Anaïs Nin",
+    "description": "Began a relationship with Anaïs Nin.",
+    "date": {
+      "year": 1931,
+      "note": "1931-1934"
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "First printing of Tropic of Cancer",
+    "description": "Anaïs Nin financed the first printing of *Tropic of Cancer*.",
+    "date": {
+      "year": 1934,
+      "note": ""
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "June divorced Miller by proxy",
+    "description": "June divorced Miller by proxy in Mexico City.",
+    "date": {
+      "year": 1934,
+      "note": ""
+    },
+    "location": {
+      "name": "Mexico City",
+      "lat": 19.3207722,
+      "lng": -99.1514678
+    }
+  },
+  {
+    "name": "Learned about George Dibbern's memoir Quest",
+    "description": "Learned about and helped promote George Dibbern’s memoir *Quest*.",
+    "date": {
+      "year": 1938,
+      "note": "circa 1938-1939"
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Invited to Greece",
+    "description": "Lawrence Durrell invited Miller to Greece.",
+    "date": {
+      "year": 1939,
+      "note": ""
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Returned to New York",
+    "description": "Returned to New York.",
+    "date": {
+      "year": 1940,
+      "note": ""
+    },
+    "location": {
+      "name": "New York",
+      "lat": 40.7127281,
+      "lng": -74.0060152
+    }
+  },
+  {
+    "name": "Visited Greece",
+    "description": "Visited Greece; experience later described in *The Colossus of Maroussi*.",
+    "date": {
+      "year": 1941,
+      "note": ""
+    },
+    "location": {
+      "name": "Greece",
+      "lat": 38.9953683,
+      "lng": 21.9877132
+    }
+  },
+  {
+    "name": "Published The Colossus of Maroussi",
+    "description": "*The Colossus of Maroussi* published.",
+    "date": {
+      "year": 1941,
+      "note": ""
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Moved to California",
+    "description": "After a year-long trip around the United States, moved to California (initially just outside Hollywood in Beverly Glen).",
+    "date": {
+      "year": 1942,
+      "note": ""
+    },
+    "location": {
+      "name": "California",
+      "lat": 36.7014631,
+      "lng": -118.755997
+    }
+  },
+  {
+    "name": "Began writing Sexus",
+    "description": "Began writing *Sexus*, the first novel in *The Rosy Crucifixion* trilogy.",
+    "date": {
+      "year": 1942,
+      "note": ""
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Published Tropic books",
+    "description": "*Tropic* books were published in France by Obelisk Press and later Olympia Press, banned in the U.S.",
+    "date": {
+      "year": 1942,
+      "note": "Prior to 1942"
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Settled in Big Sur",
+    "description": "Settled in Big Sur, California.",
+    "date": {
+      "year": 1944,
+      "note": ""
+    },
+    "location": {
+      "name": "Big Sur",
+      "lat": 36.1437044,
+      "lng": -121.564593
+    }
+  },
+  {
+    "name": "Married Janina Martha Lepska",
+    "description": "Married Janina Martha Lepska; had two children: son Tony and daughter Valentine.",
+    "date": {
+      "year": 1944,
+      "note": ""
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Lived in a small house on Partington Ridge",
+    "description": "Lived in a small house on Partington Ridge, California, with other bohemian writers; paid $5 / month rent.",
+    "date": {
+      "year": 1944,
+      "note": "1944-1947"
+    },
+    "location": {
+      "name": "Partington Ridge",
+      "lat": 36.1940457,
+      "lng": -121.7003022
+    }
+  },
+  {
+    "name": "Divorced Janina Martha Lepska",
+    "description": "Divorced Janina Martha Lepska.",
+    "date": {
+      "year": 1952,
+      "note": ""
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Married Eve McClure",
+    "description": "Married Eve McClure.",
+    "date": {
+      "year": 1953,
+      "note": ""
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Divorced Eve McClure",
+    "description": "Divorced Eve McClure.",
+    "date": {
+      "year": 1960,
+      "note": ""
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Reunited with June in New York",
+    "description": "Arranged a reunion in New York with ex-wife June.",
+    "date": {
+      "year": 1961,
+      "note": ""
+    },
+    "location": {
+      "name": "New York",
+      "lat": 40.7127281,
+      "lng": -74.0060152
+    }
+  },
+  {
+    "name": "Moved to Pacific Palisades, Los Angeles",
+    "description": "Moved to 444 Ocampo Drive, Pacific Palisades, Los Angeles.",
+    "date": {
+      "year": 1963,
+      "note": ""
+    },
+    "location": {
+      "name": "Pacific Palisades",
+      "lat": 34.0480643,
+      "lng": -118.5264706
+    }
+  },
+  {
+    "name": "Married Hoki Tokuda",
+    "description": "Married Hoki Tokuda (Hiroko Tokuda).",
+    "date": {
+      "year": 1967,
+      "note": ""
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Signed the Writers and Editors War Tax Protest pledge",
+    "description": "Signed the Writers and Editors War Tax Protest pledge.",
+    "date": {
+      "year": 1968,
+      "note": ""
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Nominated for the Nobel Prize in Literature",
+    "description": "Nominated for the Nobel Prize in Literature by Allan Philip.",
+    "date": {
+      "year": 1973,
+      "note": ""
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Divorced Hoki Tokuda",
+    "description": "Divorced Hoki Tokuda.",
+    "date": {
+      "year": 1977,
+      "note": ""
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Corresponded with Brenda Venus",
+    "description": "Correspondence with Brenda Venus (over 1,500 letters).",
+    "date": {
+      "year": 1976,
+      "note": "1976-1980"
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Filmed for the 1981 film Tropic of Cancer",
+    "description": "Filmed for the 1981 film *Tropic of Cancer*.",
+    "date": {
+      "year": 1981,
+      "note": ""
+    },
+    "location": {
+      "name": "",
+      "lat": null,
+      "lng": null
+    }
+  },
+  {
+    "name": "Died in Deia, Mallorca",
+    "description": "Died in Deia, Mallorca.",
+    "date": {
+      "year": 1984,
+      "note": ""
+    },
+    "location": {
+      "name": "Deia",
+      "lat": 47.5951183,
+      "lng": 25.6193826
+    }
   }
 ]
