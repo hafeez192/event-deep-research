@@ -1,0 +1,25 @@
+[
+  {
+    "name": "Henry Miller's Birth",
+    "description": "Henry Valentine Miller was born in New York City, U.S.",
+    "date": {
+      "year": 1891,
+      "note": "December 26"
+    },
+    "location": {
+      "name": "New York City, U.s.",
+      "lat": 40.7127281,
+      "lng": -74.0060152
+    },
+    "image": "image of henry miller.png"
+  },
+  {
+    "name": "Marriage to Beatrice Sylvas Wickens",
+    "description": "Henry Miller married Beatrice Sylvas Wickens.",
+    "date": {
+      "year": 1917,
+      "note": null
+    },
+    "image": "image-about-marriage.png"
+  }
+]
