@@ -116,27 +116,42 @@ def url_finder_func():
 def url_crawler_func(url: str):
     """Mock implementation for crawling a URL."""
     print(f"--- Executing Mock URL Crawler for: {url} ---")
-    return {
-        "output": "Extracted 2 new events from Wikipedia.",
-        "new_events": [
-            {
-                "id": 1,
-                "name": "Birth",
-                "description": "Born in Yorkville, NYC.",
-                "source": "Wikipedia",
-                "date": {"year": 1891},
-                "location": "New York City",
-            },
-            {
-                "id": 2,
-                "name": "Moved to Paris",
-                "description": "Moved to Paris, a defining moment.",
-                "source": "Wikipedia",
-                "date": {"year": 1930},
-                "location": "Paris, France",
-            },
-        ],
-    }
+    if url.contains("wikipedia"):
+        return {
+            "output": "Extracted 2 new events from Wikipedia.",
+            "new_events": [
+                {
+                    "id": 1,
+                    "name": "Birth",
+                    "description": "Born in Yorkville, NYC.",
+                    "source": "Wikipedia",
+                    "date": {"year": 1891},
+                    "location": "New York City",
+                },
+                {
+                    "id": 2,
+                    "name": "Moved to Paris",
+                    "description": "Moved to Paris, a defining moment.",
+                    "source": "Wikipedia",
+                    "date": {"year": 1930},
+                    "location": "Paris, France",
+                },
+            ],
+        }
+    else:
+        return {
+            "output": "Extracted 2 new events from Britannica.",
+            "new_events": [
+                {
+                    "id": 1,
+                    "name": "Death",
+                    "description": "Died in Pacific Palisades, Los Angeles.",
+                    "source": "Britannica",
+                    "date": {"year": 1980},
+                    "location": "Pacific Palisades, Los Angeles",
+                },
+            ],
+        }
 
 
 def further_event_research_func(event_name: str):
