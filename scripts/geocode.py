@@ -34,8 +34,12 @@ def main():
         events = json.load(f)
 
     # Process each event
-    for event in events:
-        if isinstance(event.get("location"), str):
+    for i, event in enumerate(events, 1):
+        # Add auto-incremental ID
+        event["id"] = i
+
+        # Only process location if it's not empty
+        if isinstance(event.get("location"), str) and event["location"].strip():
             loc_name = event["location"]
             print(f"Geocoding: {loc_name} ...")
             lat, lng = geocode_location(loc_name)
@@ -46,6 +50,10 @@ def main():
 
             # Be polite to the API
             time.sleep(1)
+        else:
+            # Remove location field entirely for empty locations
+            if "location" in event:
+                del event["location"]
 
     # Save new JSON
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:

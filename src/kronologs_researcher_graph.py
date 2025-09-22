@@ -71,7 +71,7 @@ async def researcher(
 
 async def researcher_tools(
     state: ResearcherState, config: RunnableConfig
-) -> Command[Literal["researcher", "compress_research"]]:
+) -> Command[Literal["researcher", "clean_and_order_events"]]:
     """Node 2: The "Worker". Executes tools and always proceeds to the processing step."""
     print("\n--- 🛠️ EXECUTING TOOLS ---")
     most_recent_message = state["messages"][-1]
@@ -87,7 +87,7 @@ async def researcher_tools(
         or not most_recent_message.tool_calls
         or research_complete_tool_call
     ):
-        return Command(goto="compress_research")  # Go back if no tools to execute
+        return Command(goto="clean_and_order_events")  # Go back if no tools to execute
 
     # Step 2: Process all tool calls together (both think_tool and url_crawl)
     all_tool_messages = []
@@ -142,24 +142,19 @@ async def researcher_tools(
     )
 
 
-async def compress_research(state: ResearcherState, config: RunnableConfig):
-    """Extracts chronological events from research findings using a two-step process.
-
-    Step 1: A standard LLM cleans, de-duplicates, and chronologically orders the raw notes.
-    Step 2: A structured-output LLM parses the cleaned text into a list of ChronologyEvent objects.
+async def clean_and_order_events(
+    state: ResearcherState, config: RunnableConfig
+) -> Command[Literal["structure_events"]]:
+    """Step 1: Cleans, de-duplicates, and chronologically orders the raw notes.
 
     Args:
         state: Current researcher state with accumulated research messages.
         config: Runtime configuration with model settings.
 
     Returns:
-        Dictionary containing a list of structured chronology events.
+        Command to proceed to structure_events with updated state.
     """
-    # --- Step 1: Clean, De-duplicate, and Order Events ---
-
     print("--- Step 1: Cleaning and Ordering Events ---")
-    # Use a standard, non-structured model for this text-to-text task.
-    # We assume a base 'model' is available from your config or imports.
 
     prompt1 = step1_clean_and_order_prompt.format(
         events_summary=state.get("event_summary", "")
@@ -173,9 +168,39 @@ async def compress_research(state: ResearcherState, config: RunnableConfig):
     print(cleaned_events_text)
     print("---------------------------------------")
 
-    # --- Step 2: Structure the Cleaned Events into JSON ---
+    # Update the state with cleaned events text
+    updated_state = {
+        "cleaned_events_text": cleaned_events_text,
+        "event_summary": f"Processed: {cleaned_events_text[:100]}..."
+        if len(cleaned_events_text) > 100
+        else f"Processed: {cleaned_events_text}",
+    }
 
+    # Return Command to go to the next node with updated state
+    return Command(goto="structure_events", update=updated_state)
+
+
+async def structure_events(
+    state: ResearcherState, config: RunnableConfig
+) -> Command[Literal["__end__"]]:
+    """Step 2: Structures the cleaned events into JSON format.
+
+    Args:
+        state: Current researcher state with cleaned events text.
+        config: Runtime configuration with model settings.
+
+    Returns:
+        Dictionary containing a list of structured chronology events.
+    """
     print("--- Step 2: Structuring Events into JSON ---")
+
+    # Get the cleaned events from the previous step
+    cleaned_events_text = state.get("cleaned_events_text", "")
+
+    if not cleaned_events_text:
+        print("Warning: No cleaned events text found in state")
+        return {"compressed_research": []}
+
     structured_llm = structured_model.with_structured_output(Chronology)
 
     prompt2 = step2_structure_events_prompt.format(cleaned_events=cleaned_events_text)
@@ -199,7 +224,8 @@ builder = StateGraph(
 # Add the four nodes
 builder.add_node("researcher", researcher)
 builder.add_node("researcher_tools", researcher_tools)
-builder.add_node("compress_research", compress_research)
+builder.add_node("clean_and_order_events", clean_and_order_events)
+builder.add_node("structure_events", structure_events)
 # Define the workflow edges
 builder.add_edge(START, "researcher")
 
