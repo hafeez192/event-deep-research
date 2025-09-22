@@ -26,7 +26,9 @@ from src.state import (
 from src.url_crawler.url_krawler_graph import url_crawler_graph
 from src.utils import (
     count_tokens,
+    count_tokens_string,
     get_all_tools,
+    model_for_big_queries,
     model_for_tools,
     structured_model,
 )
@@ -156,12 +158,13 @@ async def clean_and_order_events(
     """
     print("--- Step 1: Cleaning and Ordering Events ---")
 
-    prompt1 = step1_clean_and_order_prompt.format(
-        events_summary=state.get("event_summary", "")
-    )
-
+    event_summary = state.get("event_summary", "")
+    prompt1 = step1_clean_and_order_prompt.format(events_summary=event_summary)
+    print("PROMPT 1", prompt1)
+    prompt_tokens = count_tokens_string(prompt1)
+    print("PROMPT TOKENS", prompt_tokens)
     # Invoke the first model to get a clean, ordered string of events
-    cleaning_response = await model_for_tools.ainvoke(prompt1)
+    cleaning_response = await model_for_big_queries.ainvoke(prompt1)
     cleaned_events_text = cleaning_response.content
 
     print("--- Cleaned and Ordered Events Text ---")
@@ -169,12 +172,7 @@ async def clean_and_order_events(
     print("---------------------------------------")
 
     # Update the state with cleaned events text
-    updated_state = {
-        "cleaned_events_text": cleaned_events_text,
-        "event_summary": f"Processed: {cleaned_events_text[:100]}..."
-        if len(cleaned_events_text) > 100
-        else f"Processed: {cleaned_events_text}",
-    }
+    updated_state = {"event_summary": cleaned_events_text}
 
     # Return Command to go to the next node with updated state
     return Command(goto="structure_events", update=updated_state)
@@ -195,21 +193,21 @@ async def structure_events(
     print("--- Step 2: Structuring Events into JSON ---")
 
     # Get the cleaned events from the previous step
-    cleaned_events_text = state.get("cleaned_events_text", "")
+    cleaned_events_text = state.get("event_summary", "")
 
     if not cleaned_events_text:
         print("Warning: No cleaned events text found in state")
-        return {"compressed_research": []}
+        return {"chronology": []}
 
     structured_llm = structured_model.with_structured_output(Chronology)
 
-    prompt2 = step2_structure_events_prompt.format(cleaned_events=cleaned_events_text)
+    prompt2 = step2_structure_events_prompt.format(events_summary=cleaned_events_text)
 
     # Invoke the second model to get the final structured output
     structured_response = await structured_llm.ainvoke(prompt2)
 
     return {
-        "compressed_research": structured_response.events,
+        "chronology": structured_response.events,
     }
 
 

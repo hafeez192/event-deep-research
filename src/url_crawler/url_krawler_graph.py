@@ -197,12 +197,15 @@ async def update_event_summary(state: UrlCrawlerState, chunk_content: str) -> st
     historical_figure = state.get("historical_figure", "")
 
     # 4. Consolidate new events with the previous summary
-    consolidation_prompt = CONSOLIDATE_SUMMARY_PROMPT.format(
-        historical_figure=historical_figure, newly_extracted_events=chunk_content
-    )
+    if chunk_content:
+        consolidation_prompt = CONSOLIDATE_SUMMARY_PROMPT.format(
+            historical_figure=historical_figure, newly_extracted_events=chunk_content
+        )
 
-    final_summary = await model_for_big_queries.ainvoke(consolidation_prompt)
-    return final_summary.content
+        final_summary = await model_for_big_queries.ainvoke(consolidation_prompt)
+        return final_summary.content
+
+    return ""
 
 
 # How many nodes to build.

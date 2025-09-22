@@ -88,7 +88,7 @@ class Chronology(BaseModel):
 class ResearcherOutputState(TypedDict):
     """Output state for individual researchers conducting research."""
 
-    compressed_research: list[ChronologyEvent]
+    chronology: list[ChronologyEvent]
 
 
 class InputResearcherState(TypedDict):
@@ -104,5 +104,5 @@ class ResearcherState(InputResearcherState):
     retrieved_documents: List[dict]  # Each dict: {"source": str, "content": str}
     tool_call_iterations: int
     event_summary: str
-    compressed_research: list[ChronologyEvent] | None
+    chronology: list[ChronologyEvent] | None
     raw_notes: dict[str, str]

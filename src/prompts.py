@@ -104,34 +104,24 @@ Provide a comprehensive, consolidated list of all biographical events, combining
 """
 
 
-step1_clean_and_order_prompt = """You are an expert biographical archivist. Your task is to process a collection of raw research notes and transform them into a clean, chronologically ordered timeline of events.
+step1_clean_and_order_prompt = """You are an expert biographical archivist. Transform raw research notes into a clean, chronological timeline.
 
-<Task>
-1.  Read all the research notes provided in the <Events Summary>.
-2.  Identify every distinct life event mentioned.
-3.  Remove any events that are clear duplicates of each other.
-4.  Order the final list of events chronologically, from the earliest to the latest.
-5.  If a precise date for an important event is missing, you MUST estimate a date or date range based on the context. Clearly label these estimates. For example: "Date: circa 1912" or "Date: Between 1920-1924".
-</Task>
+TASK: 
+1. Identify distinct life events from <Events Summary>.
+2. Remove duplicates.
+3. Order chronologically (earliest to latest).
+4. Estimate missing dates/ranges (label as "circa YYYY" or "YYYY-YYYY").
 
-<Guidelines>
--   Format the output as a simple list. Each event should start on a new line with a bullet point (`- `).
--   Each bullet point should contain the date (or estimated date) and a description of the event.
--   Do NOT use JSON or any other structured format. Your output must be plain text.
+OUTPUT: Bullet list only. Format: - Date: YYYY, MM DD - Event description (location if known)
+No JSON, plain text.
 
 <Events Summary>
-----
 {events_summary}
-----
 </Events Summary>
 
-Example Output Format:
-- Date: 1881, October 25 - Pablo Picasso is born in Málaga, Spain.
-- Date: circa 1895 - He begins his advanced art studies at the School of Fine Arts in Barcelona.
-- Date: 1900 - Picasso makes his first trip to Paris, the center of the European art world.
-
-Begin.
-"""
+Example:
+- Date: 1990, Jan 1 - Born in Manchester
+- Date: circa 1991 - Moved to London"""
 
 # Step 2: Converts the cleaned, ordered list of events into a structured JSON object.
 step2_structure_events_prompt = """You are a data processing specialist. Your sole task is to convert a pre-cleaned, chronologically ordered list of life events into a structured JSON object.
@@ -149,7 +139,7 @@ You will be given a list of events that is already de-duplicated and ordered. Yo
 
 <Chronological Events List>
 ----
-{cleaned_events}
+{events_summary}
 ----
 </Chronological Events List>
 

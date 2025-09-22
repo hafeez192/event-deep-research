@@ -63,3 +63,8 @@ tokenizer = tiktoken.get_encoding("cl100k_base")
 def count_tokens(messages: List[BaseMessage]) -> int:
     """Counts the total tokens in a list of messages."""
     return sum(len(tokenizer.encode(msg.content)) for msg in messages)
+
+
+def count_tokens_string(string: str) -> int:
+    """Counts the total tokens in a string."""
+    return len(tokenizer.encode(string))
