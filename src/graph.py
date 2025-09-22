@@ -1,72 +1,20 @@
-import operator
-from typing import Annotated, Dict, List, Literal, TypedDict
+from typing import Literal
 
-from langchain_core.messages import MessageLikeRepresentation, ToolMessage
-from langchain_core.pydantic_v1 import BaseModel, Field
+from langchain_core.messages import ToolMessage
 from langchain_core.tools import tool
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 
-from src.llm_service import get_llm
+from src.llm_service import model_for_tools
 from src.prompts import supervisor_tool_selector_prompt
-
-# --- PRE-REQUISITE: Set your OpenAI API Key ---
-# Make sure to set this environment variable before running
-# os.environ["OPENAI_API_KEY"] = "sk-..."
-
-# --- 1. DEFINE TOOLS FOR THE SUPERVISOR LLM ---
-
-# These Pydantic models define the "schema" of the tools the supervisor can call.
-
-
-def override_reducer(current_value, new_value):
-    """Reducer function that allows overriding values in state."""
-    if isinstance(new_value, dict) and new_value.get("type") == "override":
-        return new_value.get("value", new_value)
-    else:
-        return operator.add(current_value, new_value)
-
-
-class UrlFinderTool(BaseModel):
-    """Finds a list of authoritative biography URLs for a given person.
-    This should be the very first tool you call in the research process to gather a list of
-    high-quality sources (like Wikipedia, Britannica) before you can start extracting events.
-    """
-
-    pass  # No arguments needed
-
-
-class UrlCrawlerTool(BaseModel):
-    """Extracts structured biographical events from a single URL.
-    Use this tool after `UrlFinderTool` has provided a list of sources. This is the primary
-    tool for populating the initial timeline with new events. You should call this for each
-    promising URL you find.
-    """
-
-    url: str = Field(
-        description="The single, most promising URL to crawl for new events."
-    )
-
-
-class FurtherEventResearchTool(BaseModel):
-    """Deepens the research on a single, *existing* event to find missing details like
-    specific dates, locations, or context. Use this tool when you already have a baseline
-    of events from `UrlCrawlerTool` but they are incomplete. Do NOT use this to find new events.
-    """
-
-    event_name: str = Field(
-        description="The exact name of the event from the timeline that needs more detail. For example, 'Marriage to June Mansfield'."
-    )
-
-
-class FinishResearchTool(BaseModel):
-    """Concludes the research process.
-    Call this tool ONLY when you have a comprehensive timeline of the person's life,
-    including key events like birth, death, major achievements, and significant personal
-    milestones, and you are confident that no major gaps remain.
-    """
-
-    pass
+from src.state import (
+    FinishResearchTool,
+    FurtherEventResearchTool,
+    SupervisorState,
+    SupervisorStateInput,
+    UrlCrawlerTool,
+    UrlFinderTool,
+)
 
 
 @tool(description="Strategic reflection tool for research planning")
@@ -95,10 +43,6 @@ def think_tool(reflection: str) -> str:
         Confirmation that reflection was recorded for decision-making
     """
     return f"Reflection recorded: {reflection}"
-
-
-# --- 2. MOCK TOOL IMPLEMENTATIONS ---
-# These are the actual Python functions that get executed.
 
 
 def url_finder_func():
@@ -170,35 +114,16 @@ def further_event_research_func(event_name: str):
     }
 
 
-# --- 3. DEFINE STATE ---
-
-
-class SupervisorStateInput(TypedDict):
-    person_to_research: str
-
-
-class SupervisorState(SupervisorStateInput):
-    events: List[Dict]
-    messages: Annotated[list[MessageLikeRepresentation], override_reducer]
-
-
-# --- 4. DEFINE GRAPH NODES ---
-
-
 async def supervisor_node(
     state: SupervisorState,
 ) -> Command[Literal["supervisor_tools"]]:
     """The 'brain' of the agent. It decides the next action."""
-    print("--- SUPERVISOR: Planning next action ---")
-
     prompt = supervisor_tool_selector_prompt.format(
         person_to_research=state["person_to_research"],
         event_summary=state.get("events", []),
         max_iterations=5,
     )
 
-    # Use a real LLM to make the decision
-    llm = get_llm("ollama:gpt-oss:latest")
     tools = [
         UrlFinderTool,
         UrlCrawlerTool,
@@ -206,16 +131,14 @@ async def supervisor_node(
         FinishResearchTool,
         think_tool,
     ]
-    llm_with_tools = llm.bind_tools(tools)
+    llm_with_tools = model_for_tools.bind_tools(tools)
 
     messages = state.get("messages", [])
 
     prompt = [("system", prompt)] + messages
-    print("PROMPT", prompt)
-
+    print("Supervisor PROMPT", prompt)
     response = await llm_with_tools.ainvoke(prompt)
 
-    print("RESPONSE", response)
     # The output is an AIMessage with tool_calls, which we add to the history
     return Command(
         goto="supervisor_tools",
@@ -227,13 +150,10 @@ async def supervisor_tools_node(
     state: SupervisorState,
 ) -> Command[Literal["supervisor", "__end__"]]:
     """The 'hands' of the agent. Executes tools and returns a Command for routing."""
-    print("--- SUPERVISOR_TOOLS: Executing tools ---")
-
     last_message = state["messages"][-1]
 
     # If the LLM made no tool calls, we finish.
     if not last_message.tool_calls:
-        print("    -> No tool calls. Finishing.")
         return Command(goto=END)
 
     # This is the core logic for executing tools and updating state.
@@ -243,8 +163,6 @@ async def supervisor_tools_node(
     for tool_call in last_message.tool_calls:
         tool_name = tool_call["name"]
         tool_args = tool_call["args"]
-
-        print(f"    -> Executing tool: {tool_name} with args: {tool_args}")
 
         if tool_name == "FinishResearchTool":
             return Command(goto=END)
@@ -294,22 +212,13 @@ async def supervisor_tools_node(
     )
 
 
-# --- 5. BUILD THE GRAPH ---
-
 workflow = StateGraph(SupervisorState, input_schema=SupervisorStateInput)
 
 # Add the two core nodes
 workflow.add_node("supervisor", supervisor_node)
 workflow.add_node("supervisor_tools", supervisor_tools_node)
 
-# The supervisor node is the entry point
 workflow.add_edge(START, "supervisor")
 
-# The supervisor plans, and then the tools node executes.
-
-# The `supervisor_tools` node uses the Command helper to decide what to do next:
-# - Command(goto="supervisor", ...) will loop back to the supervisor.
-# - Command(goto=END) or just END will terminate the graph.
-# LangGraph inherently understands how to handle the Command object, so no more edges are needed.
 
 graph = workflow.compile()

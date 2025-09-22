@@ -85,3 +85,8 @@ def get_llm(model_name: str, **kwargs: Any) -> LLMWithTemperatureCheck:
     """Get LLM service wrapped with temperature checking."""
     original_llm = init_chat_model(temperature=0, model=model_name, **kwargs)
     return LLMWithTemperatureCheck(original_llm)
+
+
+model_for_tools = get_llm("ollama:gpt-oss:latest")
+model_for_big_queries = get_llm("ollama:gemma3:12b")
+structured_model = get_llm("ollama:llama3.1:latest")
