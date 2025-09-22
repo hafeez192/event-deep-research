@@ -18,12 +18,12 @@ You may not search the same domain (e.g., `wikipedia.org`) more than once.
 
 * **think_tool**: IMPORTANT! Use for reflection after a search to analyze findings and plan your next step.
 
-* **ResearchComplete**: When research is finished, you must call this tool with no arguments. 
+* **research_complete**: When research is finished, you must call this tool with no arguments. 
 DO NOT EVER provide the list of events yourself.
 </Available Tools>
 
 <Hard Limits>
-You MUST stop researching and call `ResearchComplete` when **ANY** of the following conditions are met:
+You MUST stop researching and call `research_complete` when **ANY** of the following conditions are met:
 * You have successfully retrieved information from Wikipedia.
 * You have made a total of 2 calls to the `url_crawl` tool.
 </Hard Limits>
@@ -104,30 +104,57 @@ Provide a comprehensive, consolidated list of all biographical events, combining
 """
 
 
-compress_research_system_prompt = """You are an expert biographical archivist. Your sole task is to extract a chronological list of significant life events from the provided research notes.
+step1_clean_and_order_prompt = """You are an expert biographical archivist. Your task is to process a collection of raw research notes and transform them into a clean, chronologically ordered timeline of events.
 
 <Task>
-You must identify every event that can be associated with a specific date or time period. For each event, you will extract its name, a detailed description, its date, and location. You must output this information as a structured JSON object.
-If a date is not present but it's an imported event to the life of the person, add it into chronological order.
+1.  Read all the research notes provided in the <Events Summary>.
+2.  Identify every distinct life event mentioned.
+3.  Remove any events that are clear duplicates of each other.
+4.  Order the final list of events chronologically, from the earliest to the latest.
+5.  If a precise date for an important event is missing, you MUST estimate a date or date range based on the context. Clearly label these estimates. For example: "Date: circa 1912" or "Date: Between 1920-1924".
 </Task>
 
 <Guidelines>
-1.  Focus exclusively on chronological events (e.g., births, early life,  deaths, publications, moves, new jobs, significant personal events).
-2.  Ignore all information that is not relevant to the life of the person.
-3.  For the `name` field, create a short, descriptive title for the event.
-4.  For the `description` field, provide a clear and concise summary of what happened.
-5.  For the `date` field, populate `year`, `month`, and `day` whenever possible. If a date is ambiguous (e.g., "summer 1922" or "early in the year"), use the `note` field to capture that detail.
-</Guidelines>
+-   Format the output as a simple list. Each event should start on a new line with a bullet point (`- `).
+-   Each bullet point should contain the date (or estimated date) and a description of the event.
+-   Do NOT use JSON or any other structured format. Your output must be plain text.
 
 <Events Summary>
-Events Summary:
 ----
 {events_summary}
+----
 </Events Summary>
+
+Example Output Format:
+- Date: 1881, October 25 - Pablo Picasso is born in Málaga, Spain.
+- Date: circa 1895 - He begins his advanced art studies at the School of Fine Arts in Barcelona.
+- Date: 1900 - Picasso makes his first trip to Paris, the center of the European art world.
+
+Begin.
+"""
+
+# Step 2: Converts the cleaned, ordered list of events into a structured JSON object.
+step2_structure_events_prompt = """You are a data processing specialist. Your sole task is to convert a pre-cleaned, chronologically ordered list of life events into a structured JSON object.
+
+<Task>
+You will be given a list of events that is already de-duplicated and ordered. You must not change the order or content of the events. For each event in the list, you will extract its name, a detailed description, its date, and location, and format it as JSON.
+</Task>
+
+<Guidelines>
+1.  For the `name` field, create a short, descriptive title for the event (e.g., "Birth of Pablo Picasso").
+2.  For the `description` field, provide the clear and concise summary of what happened from the input text.
+3.  For the `date` field, populate `year`, `month`, and `day` whenever possible.
+4.  If the date is an estimate or a range (e.g., "circa 1912" or "Between 1920-1924"), you MUST capture that specific text in the `note` field of the date object, and provide your best estimate for the `year`.
+</Guidelines>
+
+<Chronological Events List>
+----
+{cleaned_events}
+----
+</Chronological Events List>
 
 CRITICAL: You must only return the structured JSON output. Do not add any commentary, greetings, or explanations before or after the JSON.
 """
-
 
 # --- Prompt 2: For consolidating new events with the existing summary ---
 CONSOLIDATE_SUMMARY_PROMPT = """You are a biographical assistant. Your task is to convert blocks of text that contains events of a person into single events where the date, description of the event, location of the event are included for {historical_figure}.

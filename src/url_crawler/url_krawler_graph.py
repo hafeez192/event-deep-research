@@ -120,7 +120,7 @@ async def extract_events_from_chunks(
 
     # first_two_chunks = chunks[:2]
     chunks_with_categories = []
-    for chunk in chunks[:2]:
+    for chunk in chunks:
         prompt = EXTRACT_EVENTS_PROMPT.format(
             historical_figure=historical_figure, text_chunk=chunk
         )

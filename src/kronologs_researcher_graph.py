@@ -13,8 +13,9 @@ from langgraph.graph.state import RunnableConfig
 from langgraph.types import Command
 
 from src.prompts import (
-    compress_research_system_prompt,
     research_system_prompt,
+    step1_clean_and_order_prompt,
+    step2_structure_events_prompt,
 )
 from src.state import (
     Chronology,
@@ -58,6 +59,7 @@ async def researcher(
     print("MESSAGES TOKEN COUNT", messages_token_count)
     response = await research_model.ainvoke(messages)
 
+    print("RESPONSE", response)
     return Command(
         goto="researcher_tools",
         update={
@@ -76,7 +78,7 @@ async def researcher_tools(
 
     # Step 1: Check exit conditions
     research_complete_tool_call = any(
-        tool_call["name"] == "ResearchComplete"
+        tool_call["name"] == "research_complete"
         for tool_call in most_recent_message.tool_calls
     )
 
@@ -141,34 +143,48 @@ async def researcher_tools(
 
 
 async def compress_research(state: ResearcherState, config: RunnableConfig):
-    """Extracts chronological events from research findings and structures them.
+    """Extracts chronological events from research findings using a two-step process.
 
-    This function processes all research messages, identifies key life events
-    of the subject, and formats them into a structured list of ChronologyEvent objects.
+    Step 1: A standard LLM cleans, de-duplicates, and chronologically orders the raw notes.
+    Step 2: A structured-output LLM parses the cleaned text into a list of ChronologyEvent objects.
 
     Args:
         state: Current researcher state with accumulated research messages.
         config: Runtime configuration with model settings.
 
     Returns:
-        Dictionary containing a list of structured chronology events and raw notes.
+        Dictionary containing a list of structured chronology events.
     """
-    # Step 1: Configure the model
+    # --- Step 1: Clean, De-duplicate, and Order Events ---
 
-    structured_llm = structured_model.with_structured_output(Chronology)
+    print("--- Step 1: Cleaning and Ordering Events ---")
+    # Use a standard, non-structured model for this text-to-text task.
+    # We assume a base 'model' is available from your config or imports.
 
-    # TODO: Add extra prompt and request so the events are in chronological order and cleaned. The last one is just for the json
-
-    prompt = compress_research_system_prompt.format(
+    prompt1 = step1_clean_and_order_prompt.format(
         events_summary=state.get("event_summary", "")
     )
 
-    print("PROMPT", prompt)
-    response = await structured_llm.ainvoke(prompt)
+    # Invoke the first model to get a clean, ordered string of events
+    cleaning_response = await model_for_tools.ainvoke(prompt1)
+    cleaned_events_text = cleaning_response.content
+
+    print("--- Cleaned and Ordered Events Text ---")
+    print(cleaned_events_text)
+    print("---------------------------------------")
+
+    # --- Step 2: Structure the Cleaned Events into JSON ---
+
+    print("--- Step 2: Structuring Events into JSON ---")
+    structured_llm = structured_model.with_structured_output(Chronology)
+
+    prompt2 = step2_structure_events_prompt.format(cleaned_events=cleaned_events_text)
+
+    # Invoke the second model to get the final structured output
+    structured_response = await structured_llm.ainvoke(prompt2)
 
     return {
-        # Return an empty list to match the required type for 'compressed_research'
-        "compressed_research": response.events,
+        "compressed_research": structured_response.events,
     }
 
 

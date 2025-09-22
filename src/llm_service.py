@@ -16,7 +16,7 @@ class LLMWithTemperatureCheck:
     def __init__(
         self,
         llm_instance: BaseChatModel,
-        temp_threshold: float = 85.0,
+        temp_threshold: float = 80.0,
         wait_seconds: int = 2,
     ):
         self._llm = llm_instance
@@ -30,7 +30,7 @@ class LLMWithTemperatureCheck:
         while True:
             try:
                 temp_output = subprocess.check_output(
-                    "smctemp -c -i25 -n180 -f", shell=True, text=True
+                    "smctemp -g", shell=True, text=True
                 )
                 # Extract the temperature value from the output
                 temp_value = float(temp_output.strip())

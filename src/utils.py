@@ -9,7 +9,6 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
 
 from src.llm_service import get_llm
-from src.state import ResearchComplete
 
 model_for_tools = get_llm("ollama:gpt-oss:latest")
 model_for_big_queries = get_llm("ollama:gemma3:12b")
@@ -31,9 +30,15 @@ async def url_crawl(url: str) -> str:  ## REPLACE WITH SUBGRAPH
     return await actual_url_crawl(url)
 
 
+@tool
+def research_complete() -> str:
+    """Call this tool to indicate that the research is complete."""
+    return "Research completed successfully."
+
+
 async def get_all_tools(config: RunnableConfig):
     """Returns the list of available tools."""
-    return [url_crawl, think_tool, tool(ResearchComplete)]
+    return [url_crawl, think_tool, research_complete]
 
 
 async def execute_tool_safely(tool_to_call, args, config):
