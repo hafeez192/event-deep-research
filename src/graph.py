@@ -1,6 +1,7 @@
-from typing import Dict, List, Literal, TypedDict
+import operator
+from typing import Annotated, Dict, List, Literal, TypedDict
 
-from langchain_core.messages import BaseMessage, ToolMessage
+from langchain_core.messages import MessageLikeRepresentation, ToolMessage
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.tools import tool
 from langgraph.graph import END, START, StateGraph
@@ -16,6 +17,14 @@ from src.prompts import supervisor_tool_selector_prompt
 # --- 1. DEFINE TOOLS FOR THE SUPERVISOR LLM ---
 
 # These Pydantic models define the "schema" of the tools the supervisor can call.
+
+
+def override_reducer(current_value, new_value):
+    """Reducer function that allows overriding values in state."""
+    if isinstance(new_value, dict) and new_value.get("type") == "override":
+        return new_value.get("value", new_value)
+    else:
+        return operator.add(current_value, new_value)
 
 
 class UrlFinderTool(BaseModel):
@@ -149,14 +158,13 @@ def further_event_research_func(event_name: str):
 # --- 3. DEFINE STATE ---
 
 
-class SupervisorState(dict):
-    person_to_research: str
-    events: List[Dict]
-    messages: List[BaseMessage]
-
-
 class SupervisorStateInput(TypedDict):
     person_to_research: str
+
+
+class SupervisorState(SupervisorStateInput):
+    events: List[Dict]
+    messages: Annotated[list[MessageLikeRepresentation], override_reducer]
 
 
 # --- 4. DEFINE GRAPH NODES ---
@@ -229,9 +237,13 @@ async def supervisor_tools_node(
         elif tool_name == "think_tool":
             # The 'think' tool is special: it just records a reflection.
             # The reflection will be in the message history for the *next* supervisor turn.
-            response_content = f"Reflection recorded. The plan is to use: {tool_args['recommendation']}"
+            response_content = tool_args["reflection"]
             all_tool_messages.append(
-                ToolMessage(content=response_content, tool_call_id=tool_call["id"])
+                ToolMessage(
+                    content=response_content,
+                    tool_call_id=tool_call["id"],
+                    name=tool_name,
+                )
             )
 
         elif tool_name == "UrlFinderTool":

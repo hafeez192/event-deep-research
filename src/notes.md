@@ -41,13 +41,13 @@ Prompt-based tool to analyze tool outputs and history for better planning.
 ### Process
 
 - Input: Recent tool output + last 2-3 messages.
-- Prompt: "Summarize new info from [output]. Check events/messages for gaps (e.g., missing dates). Recommend: next tool (or none), reason. Output: {recommendation: 'url_crawler', reason: '...'}"
+- Prompt: "Summarize new info from [output]. Check events/messages for gaps (e.g., missing dates). Recommend: next tool (or none), reason. Output: {reflection as parameter: 'url_crawler', reason: '...'}"
 - Output: Dict appended to `messages` for supervisor to use.
 
 ### Example
 
 - Input: url_crawler output (3 events) + messages (prior URLs).
-- Think Output: {recommendation: "further_event_research", reason: "Birth/death covered; career events lack locations—targeted search next"}
+- Think Output: {reflection: thoughs on what to do next}
 
 ## 1. URL Crawler Subgraph
 

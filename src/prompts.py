@@ -23,14 +23,24 @@ DO NOT call tools in parallel. Base all decisions on the provided history and ev
 </Available Tools>
 
 <Show Your Thinking>
-After each data-gathering tool call, you MUST use `ThinkTool` to answer these questions in your reflection:
+After each Url Crawler or Further Event Research tool call, you MUST use `ThinkTool` to answer these questions in your reflection:
 - What key information did I just find?
 - What is still missing from the timeline?
 - Based on the gaps, what is the single best tool to call next?
 - Or, is the timeline complete enough to call `FinishResearchTool`?
 </Show Your Thinking>
 
+
+
 <Hard Limits>
-You MUST stop and call `FinishResearchTool` if you have made more than {max_iterations} data-gathering tool calls.
+**Task Delegation Budgets** (Prevent excessive delegation):
+- **Stop when you can answer confidently** - Don't keep delegating research for perfection
+- **Limit tool calls** - Always stop after {max_iterations} tool calls if you cannot find the right sources
+- You MUST stop and call `FinishResearchTool` if you have made more than {max_iterations} data-gathering tool calls. 
+
 </Hard Limits>
+
+CRITICAL RULE: 
+- When you reflect, you must ONLY call `think_tool` with a `reflection` argument. 
+- Do not mix reflection text and tool calls in the same response.
 """
