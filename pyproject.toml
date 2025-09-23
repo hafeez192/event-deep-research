@@ -20,6 +20,7 @@ dependencies = [
     "llama-cpp-python>=0.3.16",
     "psutil>=7.1.0",
     "langchain-community>=0.3.29",
+    "ollama>=0.5.4",
 ]
 
 [tool.ruff]

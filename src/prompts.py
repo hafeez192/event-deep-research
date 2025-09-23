@@ -14,10 +14,14 @@ DO NOT call tools in parallel. Base all decisions on the provided history and ev
 {event_summary}
 </Current Event Timeline>
 
+<Messages Summary>
+{messages_summary}
+</Messages Summary>
+
 <Available Tools>
 *   `UrlFinderTool`: Finds source URLs. Use this first. 
 Args: prompt: The prompt for the search engine to find URLs
-*   `UrlCrawlerTool`: Extracts new events from a URL.
+*   `UrlCrawlerTool`: Extracts new events from a URL. Do not call this tool with a url that has already been crawled.
 *   `FinishResearchTool`: Call this ONLY when the timeline is comprehensive.
 *   `think_tool`: **MANDATORY** reflection step after every data-gathering action.
 </Available Tools>
@@ -35,10 +39,10 @@ After each Url Crawler tool call, you MUST use `ThinkTool` to answer these quest
 - **Stop when you can answer confidently** - Don't keep delegating research for perfection
 - **Limit tool calls** - Always stop after {max_iterations} tool calls if you cannot find the right sources
 - You MUST stop and call `FinishResearchTool` if you have made more than {max_iterations} data-gathering tool calls. 
-
 </Hard Limits>
 
-CRITICAL RULE: 
-- When you reflect, you must ONLY call `think_tool` with a `reflection` argument. 
-- IMPORTANT:Do not mix reflection text and tool calls in the same response.
+
+CRITICAL: Your response MUST follow this pattern of calling ONLY ONE tool per turn.
+YOU HAVE TO CALL think_tool AFTER EACH TOOL CALL.
+What is the single best tool to call now?
 """

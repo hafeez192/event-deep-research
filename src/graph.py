@@ -1,6 +1,6 @@
 from typing import Literal
 
-from langchain_core.messages import ToolMessage
+from langchain_core.messages import MessageLikeRepresentation, ToolMessage
 from langchain_core.tools import tool
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
@@ -106,6 +106,58 @@ def url_crawler_func(url: str):
         }
 
 
+async def create_messages_summary(
+    state: SupervisorState, new_messages: list[MessageLikeRepresentation]
+) -> str:
+    previous_messages_summary = state.get("messages_summary", "")
+    """Create a summary of the messages."""
+    create_messages_summary_prompt = """You are a biographical assistant. Your task is to create a concise, consolidated summary that merges new messages with the existing summary.
+
+    CRITICAL INSTRUCTIONS:
+    - NEVER copy text verbatim from messages or previous summaries
+    - Extract only the essential information and key outcomes
+    - Use your own words to describe what happened
+    - Maximum 1-2 sentences per message entry
+
+    <NEW MESSAGES>
+    {new_messages}
+    </NEW MESSAGES>
+
+    <PREVIOUS MESSAGES SUMMARY>
+    {previous_messages_summary}
+    </PREVIOUS MESSAGES SUMMARY>
+
+    <Summarization Guidelines>
+    - Identify the core action/purpose of each message
+    - Summarize tool calls by their function and key results only
+    - Focus on what was accomplished, not how it was done
+    - Use concise, factual language
+    - DO NOT EVER REMOVE MESSAGES, JUST ADD NEW ONES.
+    </Summarization Guidelines>
+
+    <Format>
+    Provide the consolidated summary in this format:
+    Messages Summary:
+    1. [Concise description of action/tool used and key outcome]
+    2. [Brief summary of next significant action and result]
+    ...
+
+    Note: Each entry should capture the essence without copying original text.
+    </Format>
+
+    <Output>
+    Create a unified, condensed summary that combines both old and new information without repetition or verbatim copying. Prioritize brevity and clarity over completeness.
+    </Output>
+    """
+    prompt = create_messages_summary_prompt.format(
+        new_messages=new_messages,
+        previous_messages_summary=previous_messages_summary,
+    )
+
+    response = await model_for_tools.ainvoke(prompt)
+    return response.content
+
+
 async def supervisor_node(
     state: SupervisorState,
 ) -> Command[Literal["supervisor_tools"]]:
@@ -113,6 +165,7 @@ async def supervisor_node(
     prompt = supervisor_tool_selector_prompt.format(
         person_to_research=state["person_to_research"],
         event_summary=state.get("events", []),
+        messages_summary=state.get("messages_summary", ""),
         max_iterations=5,
     )
 
@@ -124,17 +177,18 @@ async def supervisor_node(
     ]
     llm_with_tools = model_for_tools.bind_tools(tools)
 
-    messages = state.get("messages", [])
-
-    prompt = [("system", prompt)] + messages
+    prompt = [("system", prompt)]
 
     response = await llm_with_tools.ainvoke(prompt)
+
+    messages_summary = await create_messages_summary(state, [response])
 
     # The output is an AIMessage with tool_calls, which we add to the history
     return Command(
         goto="supervisor_tools",
         update={
             "messages": [response],
+            "messages_summary": messages_summary,
             "tool_call_iterations": state.get("tool_call_iterations", 0) + 1,
         },
     )
@@ -196,10 +250,15 @@ async def supervisor_tools_node(
                 )
             )
 
+    messages_summary = await create_messages_summary(state, all_tool_messages)
     # The Command helper tells the graph where to go next and what state to update.
     return Command(
         goto="supervisor",
-        update={"events": current_events, "messages": all_tool_messages},
+        update={
+            "events": current_events,
+            "messages": all_tool_messages,
+            "messages_summary": messages_summary,
+        },
     )
 
 
