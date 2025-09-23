@@ -46,3 +46,43 @@ CRITICAL: Your response MUST follow this pattern of calling ONLY ONE tool per tu
 YOU HAVE TO CALL think_tool AFTER EACH TOOL CALL.
 What is the single best tool to call now?
 """
+
+
+create_messages_summary_prompt = """You are a biographical assistant. Your task is to create a concise, consolidated summary that merges new messages with the existing summary.
+
+    CRITICAL INSTRUCTIONS:
+    - NEVER copy text verbatim from messages or previous summaries
+    - Extract only the essential information and key outcomes
+    - Use your own words to describe what happened
+    - Maximum 1-2 sentences per message entry
+
+    <NEW MESSAGES>
+    {new_messages}
+    </NEW MESSAGES>
+
+    <PREVIOUS MESSAGES SUMMARY>
+    {previous_messages_summary}
+    </PREVIOUS MESSAGES SUMMARY>
+
+    <Summarization Guidelines>
+    - Identify the core action/purpose of each message
+    - Summarize tool calls by their function and key results only
+    - Focus on what was accomplished, not how it was done
+    - Use concise, factual language
+    - DO NOT EVER REMOVE MESSAGES, JUST ADD NEW ONES.
+    </Summarization Guidelines>
+
+    <Format>
+    Provide the consolidated summary in this format:
+    Messages Summary:
+    1. [Concise description of action/tool used and key outcome]
+    2. [Brief summary of next significant action and result]
+    ...
+
+    Note: Each entry should capture the essence without copying original text.
+    </Format>
+
+    <Output>
+    Create a unified, condensed summary that combines both old and new information without repetition or verbatim copying. Prioritize brevity and clarity over completeness.
+    </Output>
+    """
