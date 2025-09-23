@@ -14,28 +14,30 @@ from src.state import (
     UrlFinderTool,
 )
 
+MAX_TOOL_CALL_ITERATIONS = 5
+
 
 @tool(description="Strategic reflection tool for research planning")
 def think_tool(reflection: str) -> str:
     """Tool for strategic reflection on research progress and decision-making.
 
-    Use this tool after each search to analyze results and plan next steps systematically.
+    Use this tool after each search to analyze what are the current events and plan next step systematically.
     This creates a deliberate pause in the research workflow for quality decision-making.
 
     When to use:
-    - After receiving search results: What key information did I find?
-    - Before deciding next steps: Do I have enough to answer comprehensively?
-    - When assessing research gaps: What specific information am I still missing?
-    - Before concluding research: Can I provide a complete answer now?
+    - After finding new events: Which new events have been added?
+    - Which events may be missing or need to be further researched?
+    - When assessing events gaps: What specific information am I still missing?
+    - Before concluding research: Is the chronology sufficient to know in detail the life of the person?
 
     Reflection should address:
-    1. Analysis of current findings - What concrete information have I gathered?
+    1. Analysis of current events - What concrete information have I gathered?
     2. Gap assessment - What crucial information is still missing?
-    3. Quality evaluation - Do I have sufficient evidence/examples for a good answer?
-    4. Strategic decision - Should I continue searching or provide my answer?
+    3. Quality evaluation - Do I have sufficient events and are these enough explained for a good chronology?
+    4. Strategic decision - Should I continue searching or provide my chronology?
 
     Args:
-        reflection: Your detailed reflection on research progress, findings, gaps, and next steps
+        reflection: Your detailed reflection on research progress, events, gaps, and next steps
 
     Returns:
         Confirmation that reflection was recorded for decision-making
@@ -43,9 +45,17 @@ def think_tool(reflection: str) -> str:
     return f"Reflection recorded: {reflection}"
 
 
-def url_finder_func():
-    """Mock implementation for finding URLs."""
+def url_finder_func(prompt: str):
+    """Mock implementation for finding URLs.
+
+    Args:
+        prompt: The prompt for the search engine to find URLs
+
+    Returns:
+        A list of URLs
+    """
     print("--- Executing Mock URL Finder ---")
+    print(f"Prompt: {prompt}")
     return {
         "output": "Found 2 URLs.",
         "urls": [
@@ -117,13 +127,16 @@ async def supervisor_node(
     messages = state.get("messages", [])
 
     prompt = [("system", prompt)] + messages
-    print("Supervisor PROMPT", prompt)
+
     response = await llm_with_tools.ainvoke(prompt)
 
     # The output is an AIMessage with tool_calls, which we add to the history
     return Command(
         goto="supervisor_tools",
-        update={"messages": [response]},
+        update={
+            "messages": [response],
+            "tool_call_iterations": state.get("tool_call_iterations", 0) + 1,
+        },
     )
 
 
@@ -132,9 +145,11 @@ async def supervisor_tools_node(
 ) -> Command[Literal["supervisor", "__end__"]]:
     """The 'hands' of the agent. Executes tools and returns a Command for routing."""
     last_message = state["messages"][-1]
+    tool_call_iterations = state.get("tool_call_iterations", 0)
+    exceeded_allowed_iterations = tool_call_iterations >= MAX_TOOL_CALL_ITERATIONS
 
     # If the LLM made no tool calls, we finish.
-    if not last_message.tool_calls:
+    if not last_message.tool_calls or exceeded_allowed_iterations:
         return Command(goto=END)
 
     # This is the core logic for executing tools and updating state.
@@ -161,9 +176,12 @@ async def supervisor_tools_node(
             )
 
         elif tool_name == "UrlFinderTool":
-            result = url_finder_func()
+            prompt = tool_args["prompt"]
+            result = url_finder_func(prompt)
             all_tool_messages.append(
-                ToolMessage(content=str(result), tool_call_id=tool_call["id"])
+                ToolMessage(
+                    content=str(result), tool_call_id=tool_call["id"], name=tool_name
+                )
             )
 
         elif tool_name == "UrlCrawlerTool":
@@ -171,7 +189,11 @@ async def supervisor_tools_node(
             if "new_events" in result:
                 current_events.extend(result["new_events"])  # Update events list
             all_tool_messages.append(
-                ToolMessage(content=result["output"], tool_call_id=tool_call["id"])
+                ToolMessage(
+                    content=result["output"],
+                    tool_call_id=tool_call["id"],
+                    name=tool_name,
+                )
             )
 
     # The Command helper tells the graph where to go next and what state to update.

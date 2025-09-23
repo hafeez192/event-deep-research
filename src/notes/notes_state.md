@@ -90,5 +90,5 @@ If not, add it to the events list with a date and then it will be sorted.
 
 Next Steps
 
-1. Remove even further research
+1. Remove even further research DONE
 2. Create the url finder tool and see which urls are returned based on the events.

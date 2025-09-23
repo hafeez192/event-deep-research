@@ -15,7 +15,8 @@ DO NOT call tools in parallel. Base all decisions on the provided history and ev
 </Current Event Timeline>
 
 <Available Tools>
-*   `UrlFinderTool`: Finds source URLs. Use this first.
+*   `UrlFinderTool`: Finds source URLs. Use this first. 
+Args: prompt: The prompt for the search engine to find URLs
 *   `UrlCrawlerTool`: Extracts new events from a URL.
 *   `FinishResearchTool`: Call this ONLY when the timeline is comprehensive.
 *   `think_tool`: **MANDATORY** reflection step after every data-gathering action.

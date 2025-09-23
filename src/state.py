@@ -62,3 +62,4 @@ class SupervisorStateInput(TypedDict):
 class SupervisorState(SupervisorStateInput):
     events: List[Dict]
     messages: Annotated[list[MessageLikeRepresentation], override_reducer]
+    tool_call_iterations: int = 0
