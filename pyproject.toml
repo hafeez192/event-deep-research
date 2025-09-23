@@ -22,8 +22,8 @@ dependencies = [
     "langchain-community>=0.3.29",
 ]
 
-
 [tool.ruff]
+src = ["src"]
 lint.select = [
     "E",    # pycodestyle
     "F",    # pyflakes
