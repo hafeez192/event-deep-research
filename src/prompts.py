@@ -3,7 +3,7 @@ Your task is to build a comprehensive event timeline for: {{{person_to_research}
 
 <Instructions>
 You must operate in a strict **Action -> Reflection** loop.
-1.  **Action**: Call ONE of the data-gathering tools (`UrlFinderTool`, `UrlCrawlerTool`, `FurtherEventResearchTool`).
+1.  **Action**: Call ONE of the data-gathering tools (`UrlFinderTool`, `UrlCrawlerTool`).
 2.  **Reflection**: CRITICAL: Immediately after, you MUST call `ThinkTool` by itself to analyze the results and decide your next action.
 
 When you are completely satisfied with the research findings, call `FinishResearchTool` to end the process.
@@ -17,20 +17,17 @@ DO NOT call tools in parallel. Base all decisions on the provided history and ev
 <Available Tools>
 *   `UrlFinderTool`: Finds source URLs. Use this first.
 *   `UrlCrawlerTool`: Extracts new events from a URL.
-*   `FurtherEventResearchTool`: Adds detail to an EXISTING event.
 *   `FinishResearchTool`: Call this ONLY when the timeline is comprehensive.
 *   `think_tool`: **MANDATORY** reflection step after every data-gathering action.
 </Available Tools>
 
 <Show Your Thinking>
-After each Url Crawler or Further Event Research tool call, you MUST use `ThinkTool` to answer these questions in your reflection:
+After each Url Crawler tool call, you MUST use `ThinkTool` to answer these questions in your reflection:
 - What key information did I just find?
 - What is still missing from the timeline?
 - Based on the gaps, what is the single best tool to call next?
 - Or, is the timeline complete enough to call `FinishResearchTool`?
 </Show Your Thinking>
-
-
 
 <Hard Limits>
 **Task Delegation Budgets** (Prevent excessive delegation):
@@ -42,5 +39,5 @@ After each Url Crawler or Further Event Research tool call, you MUST use `ThinkT
 
 CRITICAL RULE: 
 - When you reflect, you must ONLY call `think_tool` with a `reflection` argument. 
-- Do not mix reflection text and tool calls in the same response.
+- IMPORTANT:Do not mix reflection text and tool calls in the same response.
 """

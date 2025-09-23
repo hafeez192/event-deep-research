@@ -8,7 +8,6 @@ from src.llm_service import model_for_tools
 from src.prompts import supervisor_tool_selector_prompt
 from src.state import (
     FinishResearchTool,
-    FurtherEventResearchTool,
     SupervisorState,
     SupervisorStateInput,
     UrlCrawlerTool,
@@ -59,7 +58,7 @@ def url_finder_func():
 def url_crawler_func(url: str):
     """Mock implementation for crawling a URL."""
     print(f"--- Executing Mock URL Crawler for: {url} ---")
-    if url.contains("wikipedia"):
+    if "wikipedia" in url:
         return {
             "output": "Extracted 2 new events from Wikipedia.",
             "new_events": [
@@ -97,22 +96,6 @@ def url_crawler_func(url: str):
         }
 
 
-def further_event_research_func(event_name: str):
-    """Mock implementation for enriching an event."""
-    print(f"--- Executing Mock Further Research for: {event_name} ---")
-    return {
-        "output": "Found more detail for the 'Moved to Paris' event.",
-        "updated_event": {
-            "id": 2,
-            "name": "Moved to Paris",
-            "description": "Moved to Paris in 1930, a period which would define his literary career.",
-            "source": "Britannica",
-            "date": {"year": 1930},
-            "location": "Paris, France",
-        },
-    }
-
-
 async def supervisor_node(
     state: SupervisorState,
 ) -> Command[Literal["supervisor_tools"]]:
@@ -126,7 +109,6 @@ async def supervisor_node(
     tools = [
         UrlFinderTool,
         UrlCrawlerTool,
-        FurtherEventResearchTool,
         FinishResearchTool,
         think_tool,
     ]
@@ -188,18 +170,6 @@ async def supervisor_tools_node(
             result = url_crawler_func(tool_args["url"])
             if "new_events" in result:
                 current_events.extend(result["new_events"])  # Update events list
-            all_tool_messages.append(
-                ToolMessage(content=result["output"], tool_call_id=tool_call["id"])
-            )
-
-        elif tool_name == "FurtherEventResearchTool":
-            result = further_event_research_func(tool_args["event_name"])
-            if "updated_event" in result:
-                # Simple update logic for MVP
-                for i, event in enumerate(current_events):
-                    if event["id"] == result["updated_event"]["id"]:
-                        current_events[i] = result["updated_event"]
-                        break
             all_tool_messages.append(
                 ToolMessage(content=result["output"], tool_call_id=tool_call["id"])
             )
