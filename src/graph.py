@@ -8,10 +8,9 @@ from src.llm_service import model_for_tools
 from src.prompts import create_messages_summary_prompt, supervisor_tool_selector_prompt
 from src.state import (
     FinishResearchTool,
+    ResearchEventsTool,
     SupervisorState,
     SupervisorStateInput,
-    UrlCrawlerTool,
-    UrlFinderTool,
 )
 
 MAX_TOOL_CALL_ITERATIONS = 5
@@ -45,7 +44,7 @@ def think_tool(reflection: str) -> str:
     return f"Reflection recorded: {reflection}"
 
 
-def url_finder_func(prompt: str):
+def research_events_func(prompt: str):
     """Mock implementation for finding URLs.
 
     Args:
@@ -56,22 +55,23 @@ def url_finder_func(prompt: str):
     """
     print("--- Executing Mock URL Finder ---")
     print(f"Prompt: {prompt}")
-    return {
-        "output": "Found 2 URLs.",
-        "urls": [
+
+    urls = (
+        [
             "https://en.wikipedia.org/wiki/Henry_Miller",
             "https://www.britannica.com/biography/Henry-Miller",
         ],
-    }
+    )
+    new_events = []
+    for url in urls:
+        ## Trigger Url Crawler and what do we want to get?
+        if "wikipedia" in url:
+            events_from_url = """
+                - Birth of Henry Miller in 1891 in New York City
+                - Moved to Paris in 1930
+            """
 
-
-def url_crawler_func(url: str):
-    """Mock implementation for crawling a URL."""
-    print(f"--- Executing Mock URL Crawler for: {url} ---")
-    if "wikipedia" in url:
-        return {
-            "output": "Extracted 2 new events from Wikipedia.",
-            "new_events": [
+            merged_events = [
                 {
                     "id": 1,
                     "name": "Birth",
@@ -88,22 +88,11 @@ def url_crawler_func(url: str):
                     "date": {"year": 1930},
                     "location": "Paris, France",
                 },
-            ],
-        }
-    else:
-        return {
-            "output": "Extracted 2 new events from Britannica.",
-            "new_events": [
-                {
-                    "id": 1,
-                    "name": "Death",
-                    "description": "Died in Pacific Palisades, Los Angeles.",
-                    "source": "Britannica",
-                    "date": {"year": 1980},
-                    "location": "Pacific Palisades, Los Angeles",
-                },
-            ],
-        }
+            ]
+            new_events.append(merged_events)
+        # elif "britannica" in url:
+
+    return new_events
 
 
 async def create_messages_summary(
@@ -132,8 +121,7 @@ async def supervisor_node(
     )
 
     tools = [
-        UrlFinderTool,
-        UrlCrawlerTool,
+        ResearchEventsTool,
         FinishResearchTool,
         think_tool,
     ]
@@ -191,24 +179,12 @@ async def supervisor_tools_node(
                 )
             )
 
-        elif tool_name == "UrlFinderTool":
+        elif tool_name == "ResearchEventsTool":
             prompt = tool_args["prompt"]
-            result = url_finder_func(prompt)
+            result = research_events_func(prompt)
             all_tool_messages.append(
                 ToolMessage(
                     content=str(result), tool_call_id=tool_call["id"], name=tool_name
-                )
-            )
-
-        elif tool_name == "UrlCrawlerTool":
-            result = url_crawler_func(tool_args["url"])
-            if "new_events" in result:
-                current_events.extend(result["new_events"])  # Update events list
-            all_tool_messages.append(
-                ToolMessage(
-                    content=result["output"],
-                    tool_call_id=tool_call["id"],
-                    name=tool_name,
                 )
             )
 

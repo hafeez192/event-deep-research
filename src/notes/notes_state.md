@@ -92,3 +92,18 @@ Next Steps
 
 1. Remove even further research DONE
 2. Create the url finder tool and see which urls are returned based on the events.
+3. Remove url crawler from the main prompt, just url finder which will focus on info missing and then after url finder this will pick one random url and do the url crawler for it. Url crawler is not a tool, is part of the url finder.
+
+# Once we trigger the Url crawler, what do we want to get from each???
+
+If we get the events in a simple text, is faster and what do we have to do then.
+
+Call the merge subgraph. (Part of the workflow)
+
+The merge subgraph will
+
+1. Match events from url crawler and supervisor state events.
+
+2. Call a prompt to match those events.
+
+3. Put everything together in events

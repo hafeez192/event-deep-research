@@ -1,40 +1,17 @@
 import operator
-from typing import Annotated, Dict, List, TypedDict
+from typing import Annotated, List, TypedDict
 
 from langchain_core.messages import MessageLikeRepresentation
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 
 
-class UrlFinderTool(BaseModel):
+class ResearchEventsTool(BaseModel):
     """Finds a list of authoritative biography URLs for a given person.
     This should be the very first tool you call in the research process to gather a list of
     high-quality sources (like Wikipedia, Britannica) before you can start extracting events.
     """
 
     pass  # No arguments needed
-
-
-class UrlCrawlerTool(BaseModel):
-    """Extracts structured biographical events from a single URL.
-    Use this tool after `UrlFinderTool` has provided a list of sources. This is the primary
-    tool for populating the initial timeline with new events. You should call this for each
-    promising URL you find.
-    """
-
-    url: str = Field(
-        description="The single, most promising URL to crawl for new events."
-    )
-
-
-class FurtherEventResearchTool(BaseModel):
-    """Deepens the research on a single, *existing* event to find missing details like
-    specific dates, locations, or context. Use this tool when you already have a baseline
-    of events from `UrlCrawlerTool` but they are incomplete. Do NOT use this to find new events.
-    """
-
-    event_name: str = Field(
-        description="The exact name of the event from the timeline that needs more detail. For example, 'Marriage to June Mansfield'."
-    )
 
 
 class FinishResearchTool(BaseModel):
@@ -59,8 +36,58 @@ class SupervisorStateInput(TypedDict):
     person_to_research: str
 
 
+class ChronologyDate(BaseModel):
+    """A structured representation of a date for a chronological event."""
+
+    year: int | None = Field(None, description="The year of the event.")
+    note: str | None = Field(
+        None,
+        description="Adds extra information to the date (month, day, range...)",
+    )
+
+
+class ChronologyEventInput(BaseModel):
+    """Represents a single, significant event in a chronological timeline."""
+
+    name: str = Field(
+        description="A short, title-like name for the event (e.g., 'Publication of Novel X', 'Moved to Paris').",
+    )
+    description: str = Field(
+        description="A concise description of the event, containing the key details from the research.",
+    )
+    date: ChronologyDate = Field(..., description="The structured date of the event.")
+    location: str | None = Field(
+        None,
+        description="The geographical location where the event occurred, if mentioned.",
+    )
+
+
+class ChronologyInput(BaseModel):
+    """A complete chronological list of events extracted from research notes."""
+
+    events: list[ChronologyEventInput] = Field(
+        description="A comprehensive list of all chronological events found in the research.",
+    )
+
+
+class ChronologyEvent(ChronologyEventInput):
+    """Represents a single, significant event in a chronological timeline."""
+
+    id: str = Field(
+        description="The id of the event.",
+    )
+
+
+class Chronology(BaseModel):
+    """A complete chronological list of events extracted from research notes."""
+
+    events: list[ChronologyEvent] = Field(
+        description="A comprehensive list of all chronological events found in the research.",
+    )
+
+
 class SupervisorState(SupervisorStateInput):
-    events: List[Dict]
+    events: List[ChronologyEvent]
     messages: Annotated[list[MessageLikeRepresentation], override_reducer]
     messages_summary: str
     tool_call_iterations: int = 0
