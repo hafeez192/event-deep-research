@@ -75,28 +75,54 @@ async def match_events(
 async def finalize_merged_events(
     state: MergeEventsState,
 ) -> Command[Literal["__end__"]]:
-    """Node 2: Takes the processed events from the LLM, assigns unique IDs to
-    new events, and produces the final merged list.
+    """Node 2: Takes the processed events from the LLM and correctly merges them
+    with the original events list.
+
+    - Updates events that were matched by the LLM.
+    - Keeps original events that were not matched.
+    - Appends brand new events found by the LLM.
     """
-    matched_events = state.get("matched_events", [])
+    llm_processed_events = state.get("llm_processed_events", [])
+    original_events = state.get(
+        "original_events", []
+    )  # We now need the original list of objects
 
-    if not matched_events:
-        # If the LLM returned nothing, we can just end with the original events
-        # or an empty list, depending on requirements.
-        return Command(
-            goto="__end__", update={"merged_events": state.get("original_events", [])}
-        )
+    if not llm_processed_events:
+        # If the LLM returned nothing, the final list is just the original list.
+        return Command(goto="__end__", update={"merged_events": original_events})
 
-    final_events = []
-    for event in matched_events:
-        # The LLM has already done the hard work of merging and structuring.
-        # We just need to handle the null IDs.
-        if event.id is None and event.status == "new":
+    # --- The New Merge Logic ---
+
+    # 1. Create a dictionary of the LLM's updated events for quick look-up.
+    #    The key is the event ID.
+    updated_events_map = {
+        event.id: event
+        for event in llm_processed_events
+        if event.status == "updated" and event.id is not None
+    }
+
+    # 2. Separate the brand new events and assign them a unique ID.
+    new_events = []
+    for event in llm_processed_events:
+        if event.status == "new":
             event.id = str(uuid4())
-        final_events.append(event)
+            new_events.append(event)
 
-    # The final, clean list is now ready.
-    return Command(goto="__end__", update={"merged_events": final_events})
+    # 3. Build the final list by iterating through the original events.
+    final_merged_list = []
+    for original_event in original_events:
+        # If this event's ID is in our map, it means the LLM updated it.
+        # So, we append the *updated version*.
+        if original_event.id in updated_events_map:
+            final_merged_list.append(updated_events_map[original_event.id])
+        # Otherwise, this event was untouched by the new info, so we keep it as is.
+        else:
+            final_merged_list.append(original_event)
+
+    # 4. Finally, add the brand new events to the end of the list.
+    final_merged_list.extend(new_events)
+
+    return Command(goto="__end__", update={"merged_events": final_merged_list})
 
 
 merge_events_graph_builder = StateGraph(
