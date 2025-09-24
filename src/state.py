@@ -74,7 +74,7 @@ class ChronologyEvent(ChronologyEventInput):
     """Represents a single, significant event in a chronological timeline."""
 
     id: str = Field(
-        description="The id of the event.",
+        description="The id of the event in lowercase and underscores. Ex: 'word1_word2'",
     )
 
 

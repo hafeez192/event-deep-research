@@ -82,7 +82,7 @@ async def structure_events(state: MergeEventsState) -> Command[Literal["merge_ev
     </Task>
 
     <Guidelines>
-    1.  For the `id` field, use the SAME id already defined in the merged events if defined, if not choose something that compresses the event (Ex: "small_event_id"). 
+    1.  For the `id` field, use the SAME id already defined in the merged events or create a new one that extremely briefy summarizes the event in lowercase and _ instead of space.
     2.  For the `name` field, create a short, descriptive title for the event .
     3.  For the `description` field, provide the clear and concise summary of what happened from the input text.
     4.  For the `date` field, populate `year`, `month`, and `day` whenever possible.
