@@ -24,7 +24,7 @@ class ResearchEventsState(InputResearchEventsState):
 
 async def url_finder(
     state: ResearchEventsState,
-) -> Command[Literal["loop_url_crawler"]]:
+) -> Command[Literal["process_urls"]]:
     """Find the urls for the prompt"""
     prompt = state.get("prompt", "")
 
@@ -40,10 +40,10 @@ async def url_finder(
     ]
 
     state["urls"] = urls
-    return Command(goto="loop_url_crawler", update={"urls": urls})
+    return Command(goto="process_urls", update={"urls": urls})
 
 
-async def loop_url_crawler(
+async def process_urls(
     state: ResearchEventsState,
 ) -> Command[Literal["__end__"]]:
     """Loop through the urls and crawl them"""
@@ -79,6 +79,6 @@ research_events_builder = StateGraph(
 )
 
 research_events_builder.add_node("url_finder", url_finder)
-research_events_builder.add_node("loop_url_crawler", loop_url_crawler)
+research_events_builder.add_node("process_urls", process_urls)
 research_events_builder.add_edge(START, "url_finder")
 research_events_graph = research_events_builder.compile()
