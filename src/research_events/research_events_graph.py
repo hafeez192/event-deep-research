@@ -2,6 +2,7 @@ from typing import Literal, TypedDict
 
 from langgraph.graph import START, StateGraph
 from langgraph.types import Command
+from src.research_events.merge_events.merge_events_graph import merge_events_graph
 from src.state import ChronologyEvent
 
 
@@ -63,8 +64,10 @@ async def loop_url_crawler(
         }
         new_events = result["url_events"]
 
-        # events = await merge_events_graph.ainvoke(events, new_events)
-        events = new_events
+        events = await merge_events_graph.ainvoke(
+            {"events": events, "new_events": new_events}
+        )
+        # events = new_events
 
     return Command(goto="__end__", update={"events": events})
 

@@ -1,4 +1,5 @@
 from typing import Literal, TypedDict
+from uuid import uuid4
 
 from langgraph.graph import START, StateGraph
 from langgraph.types import Command
@@ -7,28 +8,28 @@ from src.state import Chronology, ChronologyEvent
 
 
 class InputMergeEventsState(TypedDict):
-    original_events: list[ChronologyEvent]
     new_events: str
+    original_events: list[ChronologyEvent]
 
 
 # Example
 # {
-#     "original_events": [
-#         {
-#             "id": "5875781",
-#             "name": "Birth of Henry Miller",
-#             "description": "Born in New York City",
-#             "date": "",
-#             "location": "New York City"
-#         },
-#         {
-#             "id": "9887595",
-#             "name": "Moved to Paris",
-#             "description": "Moved to Paris in 1930",
-#             "date": "1930",
-#             "location": "Paris"
-#         }
-#     ],
+# "original_events": [
+#     {
+#         "id": "birth_of_henry_miller",
+#         "name": "Birth of Henry Miller",
+#         "description": "Born in New York City",
+#         "date": "",
+#         "location": "New York City"
+#     },
+#     {
+#         "id": "moved_to_paris",
+#         "name": "Moved to Paris",
+#         "description": "Moved to Paris in 1930",
+#         "date": "1930",
+#         "location": "Paris"
+#     }
+# ],
 #     "new_events": "Birth of Henry Miller in 1891 in New York City"
 # }
 
@@ -44,7 +45,7 @@ async def match_events(
 ) -> Command[Literal["structure_events"]]:
     original_events = state.get("original_events", [])
     new_events = state.get("new_events", [])
-    """Merge the events from the urls"""
+    """Match the new events with the original events"""
 
     prompt = f"""
     Original events:
@@ -53,6 +54,8 @@ async def match_events(
 
     New Events:
     {new_events}
+
+    Additional rule. If there's a new event that is not in the original events, you must add it to the list WITHOUT an ID.
 
 
     Create a new list of matched events in the following format:
@@ -79,11 +82,11 @@ async def structure_events(state: MergeEventsState) -> Command[Literal["merge_ev
     </Task>
 
     <Guidelines>
-    1.  For the `id` field, use the SAME id already defined in the merged events. 
-    2.  For the `name` field, create a short, descriptive title for the event (e.g., "Birth of Pablo Picasso").
+    1.  For the `id` field, use the SAME id already defined in the merged events if defined, if not choose something that compresses the event (Ex: "small_event_id"). 
+    2.  For the `name` field, create a short, descriptive title for the event .
     3.  For the `description` field, provide the clear and concise summary of what happened from the input text.
     4.  For the `date` field, populate `year`, `month`, and `day` whenever possible.
-    5.  If the date is an estimate or a range (e.g., "circa 1912" or "Between 1920-1924"), you MUST capture that specific text in the `note` field of the date object, and provide your best estimate for the `year`.
+    5.  If the date is an estimate or a range (e.g., "circa YYYY" or "Between YYYY-YYYY"), you MUST capture that specific text in the `note` field of the date object, and provide your best estimate for the `year`.
     </Guidelines>
 
     <Chronological Events List>
@@ -97,14 +100,14 @@ async def structure_events(state: MergeEventsState) -> Command[Literal["merge_ev
     """
 
     prompt = structure_events_prompt.format(matched_events=matched_events)
-    print(prompt)
     structured_llm = model_for_structured.with_structured_output(Chronology)
 
     chronology = await structured_llm.ainvoke(prompt)
 
     structured_events = chronology.events
-    # for event in structured_events.events:
-    #     event.id = str(uuid.uuid4())
+    for event in structured_events:
+        if event.id is None:
+            event.id = str(uuid4())  # default id
 
     return Command(goto="merge_events", update={"structured_events": structured_events})
 
@@ -114,7 +117,6 @@ async def merge_events(state: MergeEventsState) -> Command[Literal["__end__"]]:
     structured_events = state.get("structured_events", [])
     original_events = state.get("original_events", [])
 
-    print(structured_events)
     if not structured_events:
         return Command(goto="__end__", update={"merged_events": original_events})
     structured_events_ids = [event.id for event in structured_events]
