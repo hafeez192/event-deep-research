@@ -1,0 +1,35 @@
+{
+  "original_events": [
+    {
+      "name": "Henry  Miller was born",
+      "description": "Henry Miller was born in New York City in 1891.",
+      "date": {
+        "year": 1891,
+        "note": ""
+      },
+      "location": "New York City",
+      "id": "henry_miller_born"
+    },
+    {
+      "name": "Henry Miller was active with the Socialist Party of America",
+      "description": "Miller was active with the Socialist Party of America.",
+      "date": {
+        "year": 1900,
+        "note": "circa"
+      },
+      "location": "",
+      "id": "henry_miller_active_with_the_socialist_party_of_america"
+    },
+    {
+      "name": "Henry Miller married Beatrice Sylvas Wickens",
+      "description": "Miller married Beatrice Sylvas Wickens.",
+      "date": {
+        "year": 1917,
+        "note": ""
+      },
+      "location": "",
+      "id": "henry_miller_married_beatrice_sylvas_wickens"
+    }
+  ],
+  "url_events_summarized": " Henry Valentine Miller was born at his family's home, 450 East 85th Street, in the Yorkville section of Manhattan, New York City, U.S. He was the son of Lutheran German parents, Louise Marie (Neiting) and tailor Heinrich Miller. Miller attended Eastern District High School in Williamsburg, Brooklyn, after finishing elementary school While he was a socialist, his idol was the black Socialist Hubert Harrison Miller married his first wife, Beatrice Sylvas Wickens, in 1917;[11] their divorce was granted on December 21, 1923.[12] Together they had a daughter, Barbara, born in 1919"
+}

@@ -11,10 +11,8 @@ async def url_crawl(url: str) -> str:
     """Crawls a URL and returns its content. For this example, returns dummy text."""
     # print(f"--- FAKE CRAWLING: {url} ---")
     # if "wikipedia" in url:
-    #     return "Albert Einstein was a German-born theoretical physicist... (long text, 2000 words)... In 1905, he published four groundbreaking papers."
-    # elif "britannica" in url:
-    #     return "Albert Einstein, (born March 14, 1879, Ulm, Württemberg, Germany... (long text, 2500 words)... He received the Nobel Prize for Physics in 1921."
-    # return "No content found."
+    #     return "Henry Miller was an American novelist, short story writer and essayist. He was born in Yorkville, NYC on December 26, 1891. He moved to Paris in 1930. He wrote tropic of cancer, part of his series of novels about his life."
+
     content = await scrape_page_content(url)
     return remove_markdown_links(content)
 

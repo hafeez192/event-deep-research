@@ -8,30 +8,8 @@ from src.state import Chronology, ChronologyEvent
 
 
 class InputMergeEventsState(TypedDict):
-    new_events: str
+    url_events_summarized: str
     original_events: list[ChronologyEvent]
-
-
-# Example
-# {
-# "original_events": [
-#     {
-#         "id": "birth_of_henry_miller",
-#         "name": "Birth of Henry Miller",
-#         "description": "Born in New York City",
-#         "date": "",
-#         "location": "New York City"
-#     },
-#     {
-#         "id": "moved_to_paris",
-#         "name": "Moved to Paris",
-#         "description": "Moved to Paris in 1930",
-#         "date": "1930",
-#         "location": "Paris"
-#     }
-# ],
-#     "new_events": "Birth of Henry Miller in 1891 in New York City"
-# }
 
 
 class MergeEventsState(InputMergeEventsState):
@@ -44,25 +22,38 @@ async def match_events(
     state: MergeEventsState,
 ) -> Command[Literal["structure_events"]]:
     original_events = state.get("original_events", [])
-    new_events = state.get("new_events", [])
+    url_events_summarized = state.get("url_events_summarized", [])
+
     """Match the new events with the original events"""
+    merge_events_prompt = """
+    <Task>
+    You will be given a list of original events and a list of new events. You must match the new events with the original events.
+    Or add a new event if it can't be found on the original events.
+    </Task>
 
-    prompt = f"""
-    Original events:
+    <Original Events>
     {original_events}
+    </Original Events>
 
+    <New Events>
+    {url_events_summarized}
+    </New Events>
 
-    New Events:
-    {new_events}
+    <Rules>
+    KEEP THE ID FROM THE ORIGINAL EVENTS IF EXISTS.
+    If there's a new event that is not in the original events, you must add it to the list WITHOUT an ID.
+    </Rules>
 
-    Additional rule. If there's a new event that is not in the original events, you must add it to the list WITHOUT an ID.
-
-
-    Create a new list of matched events in the following format:
-    Example:
-    - Id: 5 Original: Birth of Henry Miller in 1891  New: Henry Miller was born in New York City    
-    - Id: 6 Original: Wrote Tropic of Cancer in 1934  New: Henry Miller wrote Tropic of Cancer in 1934, this is a novel inspired by his life in Paris and includes references to many of his experiences.
+    <Format>
+    id: word1_word2 this and that happened on X year in Y location
+    </Format>
     """
+
+    prompt = merge_events_prompt.format(
+        original_events=original_events, url_events_summarized=url_events_summarized
+    )
+
+    print("merge events pormpt", prompt)
 
     matched_events = await model_for_tools.ainvoke(prompt)
 
@@ -122,15 +113,15 @@ async def merge_events(state: MergeEventsState) -> Command[Literal["__end__"]]:
     structured_events_ids = [event.id for event in structured_events]
 
     merged_events = []
+    # Replaces or let's the old event be added if the id is not in the new or matched structured events
     for event in original_events:
         print("event", event)
-        if event["id"] in structured_events_ids:
+        if id in structured_events_ids:
             # replace the event with the new one
-            new_merged_event = structured_events[
-                structured_events_ids.index(event["id"])
-            ]
+            new_merged_event = structured_events[structured_events_ids.index(event.id)]
             merged_events.append(new_merged_event)
         else:
+            # Add the old event
             merged_events.append(event)
 
     return Command(goto="__end__", update={"merged_events": merged_events})

@@ -27,6 +27,7 @@ async def url_finder(
 ) -> Command[Literal["process_urls"]]:
     """Find the urls for the prompt"""
     prompt = state.get("prompt", "")
+    print("events", state.get("events", []))
 
     if not prompt:
         raise ValueError("Prompt is required")
@@ -49,6 +50,7 @@ async def process_urls(
     """Loop through the urls and crawl them"""
     urls = state.get("urls", [])
     events = state.get("events", [])
+    print("events", events)
     if not urls:
         return Command(goto="__end__", update={"events": events})
     url = urls.pop(0)
@@ -56,18 +58,27 @@ async def process_urls(
     for url in urls:
         # result = await url_crawler_graph.ainvoke(url)
         result = {
-            "url_events": """
-                - Birth of Henry Miller in 1891 in New York City
-                - Moved to Paris in 1930
-                - Wrote Tropic of Cancer in 1934
+            "url_events_summarized": """
+               Henry Valentine Miller was born at his family's home, 450 East 85th Street, in the Yorkville section of Manhattan, New York City, U.S. He was the son of Lutheran German parents, Louise Marie (Neiting) and tailor Heinrich Miller.
+
+
+Miller attended Eastern District High School in Williamsburg, Brooklyn, after finishing elementary school
+
+
+While he was a socialist, his "quondam idol" was the black Socialist Hubert Harrison
+
+
+Miller married his first wife, Beatrice Sylvas Wickens, in 1917;[11] their divorce was granted on December 21, 1923.[12] Together they had a daughter, Barbara, born in 1919
+
+
             """
         }
-        new_events = result["url_events"]
+        url_events_summarized = result["url_events_summarized"]
 
         events = await merge_events_graph.ainvoke(
-            {"events": events, "new_events": new_events}
+            {"original_events": events, "url_events_summarized": url_events_summarized}
         )
-        # events = new_events
+        # events = url_events_summarized
 
     return Command(goto="__end__", update={"events": events})
 

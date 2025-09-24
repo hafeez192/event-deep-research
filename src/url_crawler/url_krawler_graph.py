@@ -11,6 +11,12 @@ from src.url_crawler.utils import (
     url_crawl,
 )
 
+CHUNK_SIZE = 1000
+OVERLAP_SIZE = 20
+
+# CHUNK_SIZE = 40
+# OVERLAP_SIZE = 0
+
 
 class RelevantChunk(BaseModel):
     """Use this when the VAST MAJORITY (e.g., >80%) of the chunk describes significant
@@ -76,7 +82,9 @@ async def divide_and_extract_chunks(
     historical_figure = state.get("historical_figure", "")
 
     # 1. Chunks are divided into chunks by tokens
-    chunks = chunk_text_by_tokens(content, chunk_size=1000, overlap_size=20)
+    chunks = chunk_text_by_tokens(
+        content, chunk_size=CHUNK_SIZE, overlap_size=OVERLAP_SIZE
+    )
 
     # 2. tools are binded to the model
     tools = [tool(RelevantChunk), tool(PartialChunk), tool(IrrelevantChunk)]
@@ -84,9 +92,9 @@ async def divide_and_extract_chunks(
 
     # 3. Chunks are analyzed and simplified.
 
-    first_two_chunks = chunks[:2]
+    # first_two_chunks = chunks[2:4]
     chunks_with_categories = []
-    for chunk in first_two_chunks:
+    for chunk in chunks:
         prompt = EXTRACT_EVENTS_PROMPT.format(
             historical_figure=historical_figure, text_chunk=chunk
         )
