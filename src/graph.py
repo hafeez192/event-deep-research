@@ -6,7 +6,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 from src.llm_service import model_for_tools
 from src.prompts import create_messages_summary_prompt, supervisor_tool_selector_prompt
-from src.research_events.research_event_graph import research_events_graph
+from src.research_events.research_events_graph import research_events_graph
 from src.state import (
     FinishResearchTool,
     ResearchEventsTool,
