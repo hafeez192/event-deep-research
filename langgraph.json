@@ -1,11 +1,10 @@
 {
   "dockerfile_lines": [],
   "graphs": {
-    "legacy_kronologs_researcher": "./legacy/kronologs_researcher_graph.py:app",
-    "legacy_url_crawler": "./legacy/url_crawler/url_krawler_graph.py:url_crawler_graph",
     "supervisor": "./src/graph.py:graph",
     "research_events": "./src/research_events/research_events_graph.py:research_events_graph",
-    "merge_events_graph": "./src/research_events/merge_events/merge_events_graph.py:merge_events_graph"
+    "merge_events_graph": "./src/research_events/merge_events/merge_events_graph.py:merge_events_graph",
+    "url_crawler": "./src/url_crawler/url_krawler_graph.py:url_crawler_graph"
   },
   "python_version": "3.12",
   "env": ".env",
