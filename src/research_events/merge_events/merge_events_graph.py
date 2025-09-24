@@ -1,34 +1,10 @@
-from typing import Literal, TypedDict
+from typing import Literal
 from uuid import uuid4
 
 from langgraph.graph import START, StateGraph
 from langgraph.types import Command
-from pydantic import BaseModel
 from src.llm_service import model_for_structured
-from src.state import ChronologyEvent
-
-
-class InputMergeEventsState(TypedDict):
-    url_events_summarized: str
-    original_events: list[ChronologyEvent]
-
-
-class MatchedEvent(BaseModel):
-    id: str
-    status: Literal["updated", "new"]
-    name: str
-    description: str
-    date: str
-    location: str
-
-
-class MatchEventsState(BaseModel):
-    matched_events: list[MatchedEvent]
-
-
-class MergeEventsState(InputMergeEventsState):
-    matched_events: list[MatchedEvent]
-    merged_events: list[ChronologyEvent]
+from src.state import InputMergeEventsState, MatchEventsState, MergeEventsState
 
 
 async def match_events(
