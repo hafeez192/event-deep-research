@@ -6,6 +6,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 from src.llm_service import model_for_tools
 from src.prompts import create_messages_summary_prompt, supervisor_tool_selector_prompt
+from src.research_events.research_event_graph import research_events_graph
 from src.state import (
     FinishResearchTool,
     ResearchEventsTool,
@@ -158,7 +159,7 @@ async def supervisor_tools_node(
 
     # This is the core logic for executing tools and updating state.
     all_tool_messages = []
-    current_events = state.get("events", [])
+    events = state.get("events", [])
 
     for tool_call in last_message.tool_calls:
         tool_name = tool_call["name"]
@@ -181,7 +182,7 @@ async def supervisor_tools_node(
 
         elif tool_name == "ResearchEventsTool":
             prompt = tool_args["prompt"]
-            result = research_events_func(prompt)
+            result = await research_events_graph.ainvoke(prompt=prompt, events=events)
             all_tool_messages.append(
                 ToolMessage(
                     content=str(result), tool_call_id=tool_call["id"], name=tool_name
@@ -193,7 +194,7 @@ async def supervisor_tools_node(
     return Command(
         goto="supervisor",
         update={
-            "events": current_events,
+            "events": events,
             "messages": all_tool_messages,
             "messages_summary": messages_summary,
         },

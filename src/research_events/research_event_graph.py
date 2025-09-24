@@ -21,33 +21,34 @@ class InputMergeEventsState(TypedDict):
 
 
 # Example
-{
-    "original_events": [
-        {
-            "id": "5875781",
-            "name": "Birth of Henry Miller",
-            "description": "Born in New York City",
-            "date": "",
-            "location": "New York City",
-        },
-        {
-            "id": "9887595",
-            "name": "Moved to Paris",
-            "description": "Moved to Paris in 1930",
-            "date": "1930",
-            "location": "Paris",
-        },
-    ],
-    "new_events": "Birth of Henry Miller in 1891 in New York City",
-}
+# {
+#     "original_events": [
+#         {
+#             "id": "5875781",
+#             "name": "Birth of Henry Miller",
+#             "description": "Born in New York City",
+#             "date": "",
+#             "location": "New York City"
+#         },
+#         {
+#             "id": "9887595",
+#             "name": "Moved to Paris",
+#             "description": "Moved to Paris in 1930",
+#             "date": "1930",
+#             "location": "Paris"
+#         }
+#     ],
+#     "new_events": "Birth of Henry Miller in 1891 in New York City"
+# }
 
 
 class MergeEventsState(InputMergeEventsState):
-    merged_events: str
+    matched_events: str
     structured_events: list[ChronologyEvent]
+    merged_events: list[ChronologyEvent]
 
 
-async def merge_events(
+async def match_events(
     state: MergeEventsState,
 ) -> Command[Literal["structure_events"]]:
     original_events = state.get("original_events", [])
@@ -69,16 +70,16 @@ async def merge_events(
     - Id: 6 Original: Wrote Tropic of Cancer in 1934  New: Henry Miller wrote Tropic of Cancer in 1934, this is a novel inspired by his life in Paris and includes references to many of his experiences.
     """
 
-    merged_events = await model_for_tools.ainvoke(prompt)
+    matched_events = await model_for_tools.ainvoke(prompt)
 
     return Command(
-        goto="structure_events", update={"merged_events": merged_events.content}
+        goto="structure_events", update={"matched_events": matched_events.content}
     )
 
 
-async def structure_events(state: MergeEventsState) -> Command[Literal["__end__"]]:
+async def structure_events(state: MergeEventsState) -> Command[Literal["merge_events"]]:
     """Structure the events"""
-    merged_events = state.get("merged_events", "")
+    matched_events = state.get("matched_events", "")
 
     structure_events_prompt = """You are a data processing specialist. Your sole task is to convert a pre-cleaned, chronologically ordered list of life events into a structured JSON object.
 
@@ -97,22 +98,49 @@ async def structure_events(state: MergeEventsState) -> Command[Literal["__end__"
     <Chronological Events List>
     ----
     Merged Events:
-    {merged_events}
+    {matched_events}
     ----
     </Chronological Events List>
 
     CRITICAL: You must only return the structured JSON output. Do not add any commentary, greetings, or explanations before or after the JSON.
     """
 
-    prompt = structure_events_prompt.format(merged_events=merged_events)
+    prompt = structure_events_prompt.format(matched_events=matched_events)
     print(prompt)
     structured_llm = model_for_structured.with_structured_output(Chronology)
 
-    structured_events = await structured_llm.ainvoke(prompt)
+    chronology = await structured_llm.ainvoke(prompt)
+
+    structured_events = chronology.events
     # for event in structured_events.events:
     #     event.id = str(uuid.uuid4())
 
-    return Command(goto="__end__", update={"structured_events": structured_events})
+    return Command(goto="merge_events", update={"structured_events": structured_events})
+
+
+async def merge_events(state: MergeEventsState) -> Command[Literal["__end__"]]:
+    """Merge the events"""
+    structured_events = state.get("structured_events", [])
+    original_events = state.get("original_events", [])
+
+    print(structured_events)
+    if not structured_events:
+        return Command(goto="__end__", update={"merged_events": original_events})
+    structured_events_ids = [event.id for event in structured_events]
+
+    merged_events = []
+    for event in original_events:
+        print("event", event)
+        if event["id"] in structured_events_ids:
+            # replace the event with the new one
+            new_merged_event = structured_events[
+                structured_events_ids.index(event["id"])
+            ]
+            merged_events.append(new_merged_event)
+        else:
+            merged_events.append(event)
+
+    return Command(goto="__end__", update={"merged_events": merged_events})
 
 
 merge_events_graph_builder = StateGraph(
@@ -120,9 +148,10 @@ merge_events_graph_builder = StateGraph(
     input_schema=InputMergeEventsState,
 )
 
-merge_events_graph_builder.add_node("merge_events", merge_events)
+merge_events_graph_builder.add_node("match_events", match_events)
 merge_events_graph_builder.add_node("structure_events", structure_events)
-merge_events_graph_builder.add_edge(START, "merge_events")
+merge_events_graph_builder.add_node("merge_events", merge_events)
+merge_events_graph_builder.add_edge(START, "match_events")
 merge_events_graph = merge_events_graph_builder.compile()
 
 

@@ -5,7 +5,7 @@
     "url_crawler": "./legacy/url_crawler/url_krawler_graph.py:url_crawler_graph",
     "supervisor": "./src/graph.py:graph",
     "research_events": "./src/research_events/research_event_graph.py:research_events_graph",
-    "merge_events": "./src/research_events/research_event_graph.py:merge_events_graph"
+    "merge_events_graph": "./src/research_events/research_event_graph.py:merge_events_graph"
   },
   "python_version": "3.12",
   "env": ".env",
