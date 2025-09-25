@@ -125,10 +125,9 @@ class MatchedEvent(BaseModel):
 
     id: str
     status: Literal["updated", "new"]
-    name: str
     description: str
-    date: str
-    location: str
+    location: str | None = None
+    date: ChronologyDate | None = None
 
 
 class MatchEventsState(BaseModel):
