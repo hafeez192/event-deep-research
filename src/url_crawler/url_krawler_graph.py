@@ -189,4 +189,4 @@ builder.add_node("create_event_list", create_event_list)
 # builder.add_node("return_events", return_events)
 builder.add_edge(START, "scrape_content")
 
-url_crawler_graph = builder.compile()
+url_crawler_app = builder.compile()

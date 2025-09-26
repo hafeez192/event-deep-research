@@ -2,9 +2,9 @@ from typing import Literal, TypedDict
 
 from langgraph.graph import START, StateGraph
 from langgraph.types import Command
-from src.research_events.merge_events.merge_events_graph import merge_events_graph
+from src.research_events.merge_events.merge_events_graph import merge_events_app
 from src.state import ChronologyEvent
-from src.url_crawler.url_krawler_graph import url_crawler_graph
+from src.url_crawler.url_krawler_graph import url_crawler_app
 
 
 class InputResearchEventsState(TypedDict):
@@ -12,20 +12,52 @@ class InputResearchEventsState(TypedDict):
     events: list[ChronologyEvent]
 
 
-# Example
-# {
-#     "prompt": "Biography ofHenry Miller",
-#     "events": []
-# }
-
-
 class ResearchEventsState(InputResearchEventsState):
     urls: list[str]
+    # Add this temporary field
+    newly_extracted_events: list[ChronologyEvent]
 
 
-async def url_finder(
+def should_process_url_router(
     state: ResearchEventsState,
-) -> Command[Literal["process_urls"]]:
+) -> Command[Literal["crawl_url", "__end__"]]:
+    """Checks if URLs are available and routes to the crawler or ends the graph."""
+    print("---[ROUTER: Checking for URLs]---")
+    if state.get("urls"):
+        print(f"URLs remaining: {len(state['urls'])}. Routing to crawl.")
+        # If URLs exist, go to the crawl_url node
+        return Command(goto="crawl_url")
+    else:
+        print("No URLs remaining. Routing to __end__.")
+        # Otherwise, end the graph execution
+        return Command(goto="__end__")
+
+
+async def crawl_url(
+    state: ResearchEventsState,
+) -> Command[Literal["merge_events_and_update"]]:
+    """Crawls the next URL and updates the temporary state with new events."""
+    print("---[NODE: Crawling URL]---")
+    urls = state["urls"]
+    url_to_process = urls[0]  # Always process the first one
+
+    print(f"Crawling: {url_to_process}")
+
+    # Invoke the crawler subgraph
+    result = await url_crawler_app.ainvoke({"url": url_to_process})
+    events_from_url = result["events"]
+    print(f"Extracted {len(events_from_url)} events from {url_to_process}")
+
+    # Go to the merge node, updating the state with the extracted events
+    return Command(
+        goto="merge_events_and_update",
+        update={"newly_extracted_events": events_from_url},
+    )
+
+
+def url_finder(
+    state: ResearchEventsState,
+) -> Command[Literal["should_process_url_router"]]:
     """Find the urls for the prompt"""
     prompt = state.get("prompt", "")
     print("events", state.get("events", []))
@@ -41,49 +73,40 @@ async def url_finder(
         # "https://www.britannica.com/biography/Henry-Miller",
     ]
 
-    return Command(goto="process_urls", update={"urls": urls})
+    return Command(goto="should_process_url_router", update={"urls": urls})
 
 
-async def process_urls(
+async def merge_events_and_update(
     state: ResearchEventsState,
-) -> Command[Literal["__end__"]]:
-    """Loop through the urls and crawl them"""
-    urls = state.get("urls", [])
-    events = state.get("events", [])
-    print("events", events)
-    print("urls", urls)
-    if not urls:
-        print("no urls")
-        return Command(goto="__end__", update={"events": events})
+) -> Command[Literal["should_process_url_router"]]:
+    """Merges new events, removes the processed URL, and loops back to the router."""
+    print("---[NODE: Merging Events]---")
+    current_events = state.get("events", [])
+    new_events = state.get("newly_extracted_events", [])
 
-    for url in urls:
-        print("cralwing", url)
-        result = await url_crawler_graph.ainvoke({"url": url})
-        #         result = {
-        #             "content": """
-        #                Henry Valentine Miller was born at his family's home, 450 East 85th Street, in the Yorkville section of Manhattan, New York City, U.S. He was the son of Lutheran German parents, Louise Marie (Neiting) and tailor Heinrich Miller.
+    print(
+        f"Merging {len(new_events)} new events with {len(current_events)} existing events."
+    )
 
-        # Miller attended Eastern District High School in Williamsburg, Brooklyn, after finishing elementary school
+    # Invoke the merge subgraph
+    merged_events = await merge_events_app.ainvoke(
+        {
+            "original_events": current_events,
+            "events_extracted_from_url": new_events,
+        }
+    )
 
-        # While he was a socialist, his "quondam idol" was the black Socialist Hubert Harrison
+    remaining_urls = state["urls"][1:]
 
-        # Miller married his first wife, Beatrice Sylvas Wickens, in 1917;[11] their divorce was granted on December 21, 1923.[12] Together they had a daughter, Barbara, born in 1919
-
-        #             """
-        #         }
-        events_extracted_from_url = result["events"]
-        print("result urlkraswel", result)
-
-        events = await merge_events_graph.ainvoke(
-            {
-                "original_events": events,
-                "events_extracted_from_url": events_extracted_from_url,
-            }
-        )
-        # events = events_extracted_from_url
-        url = urls.pop(0)
-
-    return Command(goto="__end__", update={"events": events})
+    # Go back to the router to check for more URLs
+    return Command(
+        goto="should_process_url_router",
+        update={
+            "events": merged_events,
+            "urls": remaining_urls,
+            "newly_extracted_events": [],  # Clear the temporary state
+        },
+    )
 
 
 research_events_builder = StateGraph(
@@ -92,7 +115,13 @@ research_events_builder = StateGraph(
     output_schema=ResearchEventsState,
 )
 
+# Add all the nodes to the graph
 research_events_builder.add_node("url_finder", url_finder)
-research_events_builder.add_node("process_urls", process_urls)
+research_events_builder.add_node("should_process_url_router", should_process_url_router)
+research_events_builder.add_node("crawl_url", crawl_url)
+research_events_builder.add_node("merge_events_and_update", merge_events_and_update)
+
+# Set the entry point
 research_events_builder.add_edge(START, "url_finder")
-research_events_graph = research_events_builder.compile()
+
+research_events_app = research_events_builder.compile()

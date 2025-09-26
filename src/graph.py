@@ -6,7 +6,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 from src.llm_service import model_for_tools
 from src.prompts import create_messages_summary_prompt, supervisor_tool_selector_prompt
-from src.research_events.research_events_graph import research_events_graph
+from src.research_events.research_events_graph import research_events_app
 from src.state import (
     FinishResearchTool,
     ResearchEventsTool,
@@ -181,7 +181,7 @@ async def supervisor_tools_node(
 
         elif tool_name == "ResearchEventsTool":
             prompt = tool_args["prompt"]
-            result = await research_events_graph.ainvoke(prompt=prompt, events=events)
+            result = await research_events_app.ainvoke(prompt=prompt, events=events)
             all_tool_messages.append(
                 ToolMessage(
                     content=str(result), tool_call_id=tool_call["id"], name=tool_name

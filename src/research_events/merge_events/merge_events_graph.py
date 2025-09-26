@@ -186,4 +186,4 @@ merge_events_graph_builder.add_node(
 )
 merge_events_graph_builder.add_edge(START, "categorize_events")
 
-merge_events_graph = merge_events_graph_builder.compile()
+merge_events_app = merge_events_graph_builder.compile()
