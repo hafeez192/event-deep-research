@@ -5,6 +5,7 @@ from langgraph.graph.state import Command
 from langgraph.pregel.main import asyncio
 from src.llm_service import model_for_structured
 from src.research_events.merge_events.utils import ensure_categories_with_events
+
 from state import CategoriesWithEvents
 
 
