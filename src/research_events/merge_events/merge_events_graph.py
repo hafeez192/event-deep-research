@@ -1,193 +1,130 @@
-from typing import Literal
-from uuid import uuid4
+from typing import Literal, TypedDict
 
 from langgraph.graph import START, StateGraph
-from langgraph.types import Command
+from langgraph.graph.state import Command
+from pydantic import BaseModel, Field
 from src.llm_service import model_for_structured
-from src.state import InputMergeEventsState, MatchEventsState, MergeEventsState
-
-# Simplify original events
-# extract just the name and id to match with the new events
-# then merge the new events with the original events
-# return the merged events
 
 
-async def match_events(
+class CategoriesWithEvents(BaseModel):
+    early: str = Field(
+        description="Covers childhood, upbringing, family, education, and early influences that shaped the author."
+    )
+    personal: str = Field(
+        description="Focuses on relationships, friendships, family life, places of residence, and notable personal traits or beliefs."
+    )
+    career: str = Field(
+        description="Details their professional journey: first steps into writing, major publications, collaborations, recurring themes, style, and significant milestones."
+    )
+    legacy: str = Field(
+        description="Explains how their work was received, awards or recognition, cultural/literary impact, influence on other authors, and how they are remembered today."
+    )
+
+
+class InputMergeEventsState(TypedDict):
+    """The complete state for the event merging sub-graph."""
+
+    original_events: CategoriesWithEvents
+    # new_events: str
+
+
+class MergeEventsState(InputMergeEventsState):
+    new_events_in_categories: CategoriesWithEvents
+    merged_events: CategoriesWithEvents
+
+
+class OutputMergeEventsState(MergeEventsState):
+    merged_events: CategoriesWithEvents  # includes the origianl events + the events from the new events
+
+
+async def categorize_events(
     state: MergeEventsState,
-) -> Command[Literal["combine_information"]]:
-    original_events = state.get("original_events", [])
-    url_events_summarized = state.get("url_events_summarized", [])
+) -> Command[Literal["combine_new_and_original_events"]]:
+    new_events = state.get("new_events", "")
 
-    simplified_original_events = [
-        {"name": event["name"], "id": event["id"]} for event in original_events
-    ]
-
-    """Match the new events with the original events"""
-    merge_events_prompt = """
-    <Task>
-    You will merge a list of <New Events> into a list of <Original Events>. Your output must be a single, valid JSON array.
-    </Task>
-
-    <Instructions>
-    1.  **Match & Update**: For each new event, find a matching original event based on its real-world meaning (not exact wording). If found, update the event's data with the richer details from the new event. **Keep the original `id`** and add `"status": "updated"`.
-
-    2.  **Add New**: If a new event is unique and has no match in the original list, add it as a new object. Use **`"id": null`** and add `"status": "new"`. 
-
-    3.  **Final List**: The final JSON array should only contain entries corresponding to the <New Events>. Discard any original events that were not matched. Merge any duplicate new events into a single entry.
-    </Instructions>
-
-    <Original Events>
-    {original_events}
-    </Original Events>
+    categorize_events_prompt = """
+    You are a helpful assistant that will categorize the new events into the 4 categories.
 
     <New Events>
-    {url_events_summarized}
+    {new_events}
     </New Events>
+    
+    <Categories>
+    early: Covers childhood, upbringing, family, education, and early influences that shaped the author.
+    personal: Focuses on relationships, friendships, family life, places of residence, and notable personal traits or beliefs.
+    career: Details their professional journey: first steps into writing, major publications, collaborations, recurring themes, style, and significant milestones.
+    legacy: Explains how their work was received, awards or recognition, cultural/literary impact, influence on other authors, and how they are remembered today.
+    </Categories>
 
-    <Output Format Example: JSON Array>
-    [
-      {{
-        "id": "some_event_id",
-        "status": "new", # or updated
-        "description": "<description>", # This includes just the new information or a mix of both the new and the original information
-        "location": "<location>",
-        "date": {{ "year": <year>, "note": "<note>" }},
-      }}
-    ]
 
-    <critical rules>
-    DO NOT PUT THE SAME INFORMATION TWICE IN MULTIPLE EVENTS.
-    INCLUDE ALL THE INFORMATION FROM THE NEW EVENTS
-    </critical rules>
+    <Rules>
+    INCLUDE ALL THE INFORMATION FROM THE NEW EVENTS, do not abbreviate or omit any information.
+    </Rules>
     """
+    categorize_events_prompt = categorize_events_prompt.format(new_events=new_events)
 
-    prompt = merge_events_prompt.format(
-        original_events=simplified_original_events,
-        url_events_summarized=url_events_summarized,
-    )
+    structured_llm = model_for_structured.with_structured_output(CategoriesWithEvents)
 
-    structured_llm = model_for_structured.with_structured_output(MatchEventsState)
-
-    response = await structured_llm.ainvoke(prompt)
-
+    response = await structured_llm.ainvoke(categorize_events_prompt)
     return Command(
-        goto="combine_information",
-        update={"matched_events": response.matched_events},
+        goto="combine_new_and_original_events",
+        update={"new_events_in_categories": response},
     )
 
 
-async def combine_information(
-    state: MergeEventsState,
-) -> Command[Literal["finalize_merged_events"]]:
-    matched_events = state.get("matched_events", [])
-    original_events = state.get("original_events", [])
-
-    events_to_update = []
-    new_events = []
-    for matched_event in matched_events:
-        if matched_event.status == "updated":
-            print("matched_event", matched_event)
-            original_event = next(
-                (e for e in original_events if e["id"] == matched_event.id), None
-            )
-            if original_event:
-                original_event["description"] = (
-                    original_event["description"] + matched_event.description
-                )
-                events_to_update.append(original_event)
-
-        if matched_event.status == "new":
-            new_events.append(matched_event)
-
-    print("events_to_update", len(events_to_update))
-    print("events_to_update", events_to_update)
-    prompt = """ 
-    <Task>
-    You will combine the new information with the description of the event. Your output must be a single, valid JSON array.    
-    </Task>
-
-    <Original Events>
-    {original_events}
-    </Original Events>
-
-    <Output Format Example: JSON Array>
-    [
-      {{
-        "id": "some_event_id",
-        "description": "<description>", # This includes now both the new and the original information
-        "location": "<location>",
-        "date": {{ "year": <year>, "note": "<note>" }},
-      }}
-    ]
-    """
-
-    prompt = prompt.format(original_events=events_to_update)
-
-    structured_llm = model_for_structured.with_structured_output(MatchEventsState)
-
-    response = await structured_llm.ainvoke(prompt)
-    combined_events = response.matched_events
-
-    new_and_updated_events = combined_events + new_events
-
-    return Command(
-        goto="finalize_merged_events",
-        update={"matched_events": new_and_updated_events},
-    )
-
-
-async def finalize_merged_events(
+async def combine_new_and_original_events(
     state: MergeEventsState,
 ) -> Command[Literal["__end__"]]:
-    """Node 2: Takes the processed events from the LLM and correctly merges them
-    with the original events list.
+    """Combine the new events with the original events"""
+    new_events_in_categories = state.get("new_events_in_categories")
+    original_events = state.get("original_events")
 
-    - Updates events that were matched by the LLM.
-    - Keeps original events that were not matched.
-    - Appends brand new events found by the LLM.
+    print("original_events", original_events)
+    # Create a new CategoriesWithEvents object with merged content
+    merged_events = CategoriesWithEvents(
+        early="Original events:\n "
+        + original_events["early"]
+        + "\n"
+        + "New events:\n "
+        + new_events_in_categories.early,
+        personal="Original events:\n "
+        + original_events["personal"]
+        + "\n"
+        + "New events:\n "
+        + new_events_in_categories.personal,
+        career="Original events:\n "
+        + original_events["career"]
+        + "\n"
+        + "New events:\n "
+        + new_events_in_categories.career,
+        legacy="Original events:\n "
+        + original_events["legacy"]
+        + "\n"
+        + "New events:\n "
+        + new_events_in_categories.legacy,
+    )
+
+    merge_events_prompt = """
+    You are a helpful assistant that will merge the following lists including the original events and the new events.
+    You will analyze if there is any events that can be merged into the same event. 
+    At the end jus tone signle list with all the events should prevail. 
+
+   <Events>
+   {events}
+   </Events>
+
+    <Output>
+    Provide the merged list of events. Just return the list of events. No other text.
+    </Output>
     """
-    matched_events = state.get("matched_events", [])
-    original_events = state.get(
-        "original_events", []
-    )  # We now need the original list of objects
 
-    if not matched_events:
-        # If the LLM returned nothing, the final list is just the original list.
-        return Command(goto="__end__", update={"merged_events": original_events})
+    final_merged_events = {}
+    for key, events in merged_events:
+        prompt = merge_events_prompt.format(events=events)
+        response = await model_for_structured.ainvoke(prompt)
+        final_merged_events[key] = response.content
 
-    # --- The New Merge Logic ---
-
-    # 1. Create a dictionary of the LLM's updated events for quick look-up.
-    #    The key is the event ID.
-    updated_events_map = {
-        event.id: event
-        for event in matched_events
-        if event.status == "updated" and event.id is not None
-    }
-
-    # 2. Separate the brand new events and assign them a unique ID.
-    new_events = []
-    for event in matched_events:
-        if event.status == "new":
-            event.id = str(uuid4())
-            new_events.append(event)
-
-    # 3. Build the final list by iterating through the original events.
-    final_merged_list = []
-    for original_event in original_events:
-        # If this event's ID is in our map, it means the LLM updated it.
-        # So, we append the *updated version*.
-        print("original_event", original_event)
-        if original_event["id"] in updated_events_map:
-            final_merged_list.append(updated_events_map[original_event["id"]])
-        # Otherwise, this event was untouched by the new info, so we keep it as is.
-        else:
-            final_merged_list.append(original_event)
-
-    # 4. Finally, add the brand new events to the end of the list.
-    final_merged_list.extend(new_events)
-
-    return Command(goto="__end__", update={"merged_events": final_merged_list})
+    return Command(goto="__end__", update={"merged_events": final_merged_events})
 
 
 merge_events_graph_builder = StateGraph(
@@ -195,8 +132,10 @@ merge_events_graph_builder = StateGraph(
     input_schema=InputMergeEventsState,
 )
 
-merge_events_graph_builder.add_node("match_events", match_events)
-merge_events_graph_builder.add_node("combine_information", combine_information)
-merge_events_graph_builder.add_node("finalize_merged_events", finalize_merged_events)
-merge_events_graph_builder.add_edge(START, "match_events")
+merge_events_graph_builder.add_node("categorize_events", categorize_events)
+merge_events_graph_builder.add_node(
+    "combine_new_and_original_events", combine_new_and_original_events
+)
+merge_events_graph_builder.add_edge(START, "categorize_events")
+
 merge_events_graph = merge_events_graph_builder.compile()

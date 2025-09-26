@@ -3,7 +3,7 @@ This file serves as the schema for data structures, agent tools, and state manag
 """
 
 import operator
-from typing import Annotated, List, Literal, TypedDict
+from typing import Annotated, List, TypedDict
 
 from langchain_core.messages import MessageLikeRepresentation
 from pydantic import BaseModel, Field
@@ -108,36 +108,3 @@ class SupervisorState(SupervisorStateInput):
     messages: Annotated[list[MessageLikeRepresentation], override_reducer]
     messages_summary: str
     tool_call_iterations: int = 0
-
-
-# --- Event Merging Sub-Graph State ---
-
-
-class InputMergeEventsState(TypedDict):
-    """The initial input for the sub-graph that merges new events."""
-
-    url_events_summarized: str
-    original_events: list[ChronologyEvent]
-
-
-class MatchedEvent(BaseModel):
-    """Intermediate model for tracking new vs. updated events during a merge."""
-
-    id: str
-    status: Literal["updated", "new"]
-    description: str
-    location: str | None = None
-    date: ChronologyDate | None = None
-
-
-class MatchEventsState(BaseModel):
-    """Represents the output of the event matching step."""
-
-    matched_events: list[MatchedEvent]
-
-
-class MergeEventsState(InputMergeEventsState):
-    """The complete state for the event merging sub-graph."""
-
-    matched_events: list[MatchedEvent]
-    merged_events: list[ChronologyEvent]
