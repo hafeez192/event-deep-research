@@ -21,11 +21,8 @@ class ResearchEventsState(InputResearchEventsState):
 def should_process_url_router(
     state: ResearchEventsState,
 ) -> Command[Literal["crawl_url", "__end__"]]:
-    """Checks if URLs are available and routes to the crawler or ends the graph."""
-    print("---[ROUTER: Checking for URLs]---")
     if state.get("urls"):
         print(f"URLs remaining: {len(state['urls'])}. Routing to crawl.")
-        # If URLs exist, go to the crawl_url node
         return Command(goto="crawl_url")
     else:
         print("No URLs remaining. Routing to __end__.")

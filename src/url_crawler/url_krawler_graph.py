@@ -11,7 +11,7 @@ from src.url_crawler.utils import (
     url_crawl,
 )
 
-CHUNK_SIZE = 400
+CHUNK_SIZE = 800
 OVERLAP_SIZE = 20
 
 # CHUNK_SIZE = 40
@@ -93,7 +93,7 @@ async def divide_and_extract_chunks(
     # 3. Chunks are analyzed and simplified.
 
     chunks_with_categories = []
-    for chunk in chunks[0:2]:
+    for chunk in chunks:
         prompt = EXTRACT_EVENTS_PROMPT.format(
             historical_figure=historical_figure, text_chunk=chunk
         )
