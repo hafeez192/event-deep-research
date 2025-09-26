@@ -1,7 +1,8 @@
 from typing import Type, TypeVar, Union
 
 from pydantic import BaseModel
-from src.research_events.state import CategoriesWithEvents
+
+from state import CategoriesWithEvents
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -36,7 +37,8 @@ def ensure_pydantic_model(data: Union[dict, T], model_class: Type[T]) -> T:
             raise TypeError(f"Cannot convert {type(data)} to {model_class}")
 
 
-# Specific function for your use case
+# This function is needed because sometimes the object comes as a dict and then it's tricky to access the variables.
+# There has to be a better way to do this in python, but this is the best I can come up with for now.
 def ensure_categories_with_events(
     data: Union[dict, CategoriesWithEvents],
 ) -> "CategoriesWithEvents":

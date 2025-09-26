@@ -54,6 +54,25 @@ class Chronology(BaseModel):
     events: list[ChronologyEvent]
 
 
+class CategoriesWithEvents(BaseModel):
+    early: str = Field(
+        default="",
+        description="Covers childhood, upbringing, family, education, and early influences that shaped the author.",
+    )
+    personal: str = Field(
+        default="",
+        description="Focuses on relationships, friendships, family life, places of residence, and notable personal traits or beliefs.",
+    )
+    career: str = Field(
+        default="",
+        description="Details their professional journey: first steps into writing, major publications, collaborations, recurring themes, style, and significant milestones.",
+    )
+    legacy: str = Field(
+        default="",
+        description="Explains how their work was received, awards or recognition, cultural/literary impact, influence on other authors, and how they are remembered today.",
+    )
+
+
 ################################################################################
 # Section 2: Agent Tools
 # - Pydantic models that define the tools available to the LLM agents.

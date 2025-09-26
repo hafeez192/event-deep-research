@@ -3,8 +3,8 @@ from typing import Literal, TypedDict
 from langgraph.graph import START, StateGraph
 from langgraph.types import Command
 from src.research_events.merge_events.merge_events_graph import merge_events_app
-from src.research_events.state import CategoriesWithEvents
 from src.url_crawler.url_krawler_graph import url_crawler_app
+from state import CategoriesWithEvents
 
 
 class InputResearchEventsState(TypedDict):
