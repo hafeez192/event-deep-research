@@ -3,8 +3,6 @@ from typing import Literal, TypedDict
 from langchain_core.tools import tool
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
-from pydantic import BaseModel, Field
-
 from legacy.prompts import CONSOLIDATE_SUMMARY_PROMPT
 from legacy.url_crawler.prompts import EXTRACT_EVENTS_PROMPT
 from legacy.url_crawler.utils import (
@@ -13,6 +11,7 @@ from legacy.url_crawler.utils import (
     url_crawl,
 )
 from legacy.utils import model_for_big_queries, model_for_tools
+from pydantic import BaseModel, Field
 
 
 class RelevantChunk(BaseModel):
@@ -58,7 +57,7 @@ class ChunkWithCategory(TypedDict):
     content: str
     category: str
     explanation: str
-    origianl_chunk: str
+    original_chunk: str
 
 
 class UrlCrawlerState(InputUrlCrawlerState):
@@ -143,7 +142,7 @@ async def extract_events_from_chunks(
                     "content": chunk,
                     "category": tool_call_name,
                     "explanation": explanation,
-                    "origianl_chunk": chunk,
+                    "original_chunk": chunk,
                 }
             )
         elif tool_call_name == "PartialChunk":
@@ -153,7 +152,7 @@ async def extract_events_from_chunks(
                     "content": relevant_content,
                     "category": tool_call_name,
                     "explanation": explanation,
-                    "origianl_chunk": chunk,
+                    "original_chunk": chunk,
                 }
             )
         elif tool_call_name == "IrrelevantChunk":
@@ -163,7 +162,7 @@ async def extract_events_from_chunks(
                     "content": "",
                     "category": tool_call_name,
                     "explanation": explanation,
-                    "origianl_chunk": chunk,
+                    "original_chunk": chunk,
                 }
             )
         else:
@@ -185,7 +184,7 @@ async def merge_events(state: UrlCrawlerState) -> Command[Literal["__end__"]]:
             state, chunk_with_category["content"]
         )
         events += event_summary
-        raw_content += chunk_with_category["origianl_chunk"]
+        raw_content += chunk_with_category["original_chunk"]
 
     return Command(goto=END, update={"events": events})
 

@@ -4,6 +4,7 @@ from langgraph.graph import START, StateGraph
 from langgraph.types import Command
 from src.research_events.merge_events.merge_events_graph import merge_events_graph
 from src.state import ChronologyEvent
+from src.url_crawler.url_krawler_graph import url_crawler_graph
 
 
 class InputResearchEventsState(TypedDict):
@@ -37,10 +38,9 @@ async def url_finder(
 
     urls = [
         "https://en.wikipedia.org/wiki/Henry_Miller",
-        "https://www.britannica.com/biography/Henry-Miller",
+        # "https://www.britannica.com/biography/Henry-Miller",
     ]
 
-    state["urls"] = urls
     return Command(goto="process_urls", update={"urls": urls})
 
 
@@ -51,34 +51,37 @@ async def process_urls(
     urls = state.get("urls", [])
     events = state.get("events", [])
     print("events", events)
+    print("urls", urls)
     if not urls:
+        print("no urls")
         return Command(goto="__end__", update={"events": events})
-    url = urls.pop(0)
 
     for url in urls:
-        # result = await url_crawler_graph.ainvoke(url)
-        result = {
-            "url_events_summarized": """
-               Henry Valentine Miller was born at his family's home, 450 East 85th Street, in the Yorkville section of Manhattan, New York City, U.S. He was the son of Lutheran German parents, Louise Marie (Neiting) and tailor Heinrich Miller.
+        print("cralwing", url)
+        result = await url_crawler_graph.ainvoke({"url": url})
+        #         result = {
+        #             "content": """
+        #                Henry Valentine Miller was born at his family's home, 450 East 85th Street, in the Yorkville section of Manhattan, New York City, U.S. He was the son of Lutheran German parents, Louise Marie (Neiting) and tailor Heinrich Miller.
 
+        # Miller attended Eastern District High School in Williamsburg, Brooklyn, after finishing elementary school
 
-Miller attended Eastern District High School in Williamsburg, Brooklyn, after finishing elementary school
+        # While he was a socialist, his "quondam idol" was the black Socialist Hubert Harrison
 
+        # Miller married his first wife, Beatrice Sylvas Wickens, in 1917;[11] their divorce was granted on December 21, 1923.[12] Together they had a daughter, Barbara, born in 1919
 
-While he was a socialist, his "quondam idol" was the black Socialist Hubert Harrison
-
-
-Miller married his first wife, Beatrice Sylvas Wickens, in 1917;[11] their divorce was granted on December 21, 1923.[12] Together they had a daughter, Barbara, born in 1919
-
-
-            """
-        }
-        url_events_summarized = result["url_events_summarized"]
+        #             """
+        #         }
+        events_extracted_from_url = result["events"]
+        print("result urlkraswel", result)
 
         events = await merge_events_graph.ainvoke(
-            {"original_events": events, "url_events_summarized": url_events_summarized}
+            {
+                "original_events": events,
+                "events_extracted_from_url": events_extracted_from_url,
+            }
         )
-        # events = url_events_summarized
+        # events = events_extracted_from_url
+        url = urls.pop(0)
 
     return Command(goto="__end__", update={"events": events})
 

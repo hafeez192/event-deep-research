@@ -1,9 +1,9 @@
-import requests
 import re
 
+import requests
+
 FIRECRAWL_API_URL = "http://localhost:3002/v0/scrape"
-# TARGET_URL = "https://en.wikipedia.org/wiki/Henry_Miller"
-TARGET_URL = "https://www.britannica.com/biography/Henry-Miller"
+TARGET_URL = "https://en.wikipedia.org/wiki/Henry_Miller"
 
 
 def scrape_page_content(url):
@@ -31,7 +31,7 @@ def remove_markdown_links(markdown_text):
     return re.sub(r"\[(.*?)\]\(.*?\)", r"\1", markdown_text)
 
 
-if __name__ == "__main__":
-    if content := scrape_page_content(TARGET_URL):
-        print("--- CLEANED CONTENT ---")
-        print(remove_markdown_links(content))
+# if __name__ == "__main__":
+#     if content := scrape_page_content(TARGET_URL):
+#         print("--- CLEANED CONTENT ---")
+#         print(remove_markdown_links(content))

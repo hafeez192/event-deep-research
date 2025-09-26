@@ -11,7 +11,7 @@ from src.url_crawler.utils import (
     url_crawl,
 )
 
-CHUNK_SIZE = 1000
+CHUNK_SIZE = 400
 OVERLAP_SIZE = 20
 
 # CHUNK_SIZE = 40
@@ -49,7 +49,7 @@ class InputUrlCrawlerState(TypedDict):
 class ChunkWithCategory(TypedDict):
     content: str
     category: str
-    origianl_chunk: str
+    original_chunk: str
 
 
 class UrlCrawlerState(InputUrlCrawlerState):
@@ -61,7 +61,7 @@ class UrlCrawlerState(InputUrlCrawlerState):
 
 class OutputUrlCrawlerState(UrlCrawlerState):
     events: str
-    content: str
+    raw_content: str
 
 
 async def scrape_content(
@@ -92,9 +92,8 @@ async def divide_and_extract_chunks(
 
     # 3. Chunks are analyzed and simplified.
 
-    # first_two_chunks = chunks[2:4]
     chunks_with_categories = []
-    for chunk in chunks:
+    for chunk in chunks[0:2]:
         prompt = EXTRACT_EVENTS_PROMPT.format(
             historical_figure=historical_figure, text_chunk=chunk
         )
@@ -113,7 +112,7 @@ async def divide_and_extract_chunks(
                 {
                     "content": chunk,
                     "category": tool_call_name,
-                    "origianl_chunk": chunk,
+                    "original_chunk": chunk,
                 }
             )
         elif tool_call_name == "PartialChunk":
@@ -122,7 +121,7 @@ async def divide_and_extract_chunks(
                 {
                     "content": relevant_content,
                     "category": tool_call_name,
-                    "origianl_chunk": chunk,
+                    "original_chunk": chunk,
                 }
             )
         elif tool_call_name == "IrrelevantChunk":
@@ -130,12 +129,14 @@ async def divide_and_extract_chunks(
                 {
                     "content": "",
                     "category": tool_call_name,
-                    "origianl_chunk": chunk,
+                    "original_chunk": chunk,
                 }
             )
         else:
             print("Invalid response: ", response)
-            chunks_with_categories.append({"content": chunk, "category": "UNKNOWN"})
+            chunks_with_categories.append(
+                {"content": chunk, "category": "UNKNOWN", "original_chunk": chunk}
+            )
             continue
 
     return Command(
@@ -153,9 +154,9 @@ async def create_event_list(state: UrlCrawlerState) -> Command[Literal["__end__"
             state, chunk_with_category["content"]
         )
         events += event_summary
-        raw_content += chunk_with_category["origianl_chunk"]
+        raw_content += chunk_with_category["original_chunk"]
 
-    return Command(goto=END, update={"events": events})
+    return Command(goto=END, update={"events": events, "raw_content": raw_content})
 
 
 async def create_event_list_from_chunks(

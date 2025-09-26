@@ -60,7 +60,6 @@ def research_events_func(prompt: str):
     urls = (
         [
             "https://en.wikipedia.org/wiki/Henry_Miller",
-            "https://www.britannica.com/biography/Henry-Miller",
         ],
     )
     new_events = []
