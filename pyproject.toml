@@ -62,7 +62,7 @@ convention = "google"
 testpaths = ["src/test"]
 pythonpath = ["src"]
 asyncio_mode = "auto"
-addopts = "-v"
+addopts = "-v -m 'not llm'"
 markers = [
     "llm: marks tests that make real LLM API calls"
 ]

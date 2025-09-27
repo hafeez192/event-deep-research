@@ -123,7 +123,7 @@ class SupervisorStateInput(TypedDict):
 class SupervisorState(SupervisorStateInput):
     """The complete state for the main supervisor graph."""
 
-    events: List[ChronologyEvent]
-    messages: Annotated[list[MessageLikeRepresentation], override_reducer]
-    messages_summary: str
-    tool_call_iterations: int = 0
+    chronology_events: List[ChronologyEvent]
+    conversation_history: Annotated[list[MessageLikeRepresentation], override_reducer]
+    conversation_summary: str
+    iteration_count: int = 0

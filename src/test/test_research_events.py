@@ -1,0 +1,163 @@
+# tests/research_events/test_research_events.py
+
+"""Tests for the research_events_graph."""
+
+from unittest.mock import AsyncMock, patch
+
+import pytest
+
+# Imports are relative to the src directory (configured in pyproject.toml pythonpath)
+from research_events.research_events_graph import research_events_app
+from state import CategoriesWithEvents
+
+
+@pytest.fixture
+def sample_input_state() -> dict:
+    """Provide a sample input state for the research_events_app graph."""
+    return {
+        "prompt": "Research the life of Henry Miller",
+        "existing_events": CategoriesWithEvents(
+            early="Born in 1920 in Paris.",
+            personal="Married in 1945.",
+            career="Published first novel in 1950.",
+            legacy="Won Nobel Prize in 1980.",
+        ),
+    }
+
+
+class MockResponse:
+    """Mock response class for LLM responses."""
+
+    def __init__(self, content):
+        """Initialize mock response with content."""
+        self.content = content
+
+
+class MockToolCall:
+    """Mock tool call for structured LLM responses."""
+
+    def __init__(self, name, args):
+        """Initialize mock tool call with name and args."""
+        self.name = name
+        self.args = args
+
+
+class MockToolResponse:
+    """Mock tool response for structured LLM responses."""
+
+    def __init__(self, tool_calls=None):
+        """Initialize mock tool response with tool calls."""
+        self.tool_calls = tool_calls or []
+
+
+@pytest.fixture
+def mock_url_crawler():
+    """Provide a reusable mock for url_crawler_app with configurable responses."""
+
+    def create_mock_crawler(extracted_events):
+        """Create a configured mock crawler."""
+        mock_crawler = AsyncMock()
+        mock_crawler.ainvoke.return_value = {
+            "extracted_events": extracted_events,
+            "raw_scraped_content": "Mock scraped content",
+        }
+        return mock_crawler
+
+    return create_mock_crawler
+
+
+@pytest.fixture
+def mock_merge_events():
+    """Provide a reusable mock for merge_events_app with configurable responses."""
+
+    def create_mock_merger(final_events):
+        """Create a configured mock merger."""
+        mock_merger = AsyncMock()
+        mock_merger.ainvoke.return_value = {"final_events": final_events}
+        return mock_merger
+
+    return create_mock_merger
+
+
+# @pytest.mark.skip(reason="Skip mocked LLM test for now")
+@pytest.mark.asyncio
+async def test_research_events_with_mocked_llm(
+    sample_input_state: dict, mock_url_crawler, mock_merge_events
+):
+    """Unit test for the research events graph with mocked dependencies."""
+    # --- Arrange: Mock Data Setup ---
+    mock_extracted_events = "Born in 1920 in Paris, France. Started writing poetry at age 15. Moved to London in 1942."
+    mock_final_events = CategoriesWithEvents(
+        early="Born in 1920 in Paris, France. Started writing poetry at age 15.",
+        personal="Married in 1945. Moved to London in 1942.",
+        career="Published first novel in 1950.",
+        legacy="Won Nobel Prize in 1980.",
+    )
+
+    # --- Act: Execute the graph with patched dependencies ---
+    with (
+        patch(
+            "research_events.research_events_graph.url_crawler_app"
+        ) as mock_crawler_patch,
+        patch(
+            "research_events.research_events_graph.merge_events_app"
+        ) as mock_merger_patch,
+    ):
+        # Configure the mocks
+        mock_crawler_patch.ainvoke = mock_url_crawler(mock_extracted_events).ainvoke
+        mock_merger_patch.ainvoke = mock_merge_events(mock_final_events).ainvoke
+
+        result = await research_events_app.ainvoke(sample_input_state)
+
+    # --- Assert: Verify the output ---
+    # The result structure has final_events nested under existing_events
+    assert "existing_events" in result
+    existing_events = result["existing_events"]
+    assert "final_events" in existing_events
+    final_events = existing_events["final_events"]
+
+    assert isinstance(final_events, CategoriesWithEvents)
+    assert (
+        final_events.early
+        == "Born in 1920 in Paris, France. Started writing poetry at age 15."
+    )
+    assert final_events.personal == "Married in 1945. Moved to London in 1942."
+    assert final_events.career == "Published first novel in 1950."
+    assert final_events.legacy == "Won Nobel Prize in 1980."
+
+    # Verify that URLs were processed
+    assert "urls" in result
+    assert result["urls"] == []  # All URLs should be processed
+
+
+# @pytest.mark.skip(reason="Skip real LLM test for now")
+@pytest.mark.llm
+@pytest.mark.asyncio
+async def test_research_events_with_real_llm(sample_input_state: dict):
+    """Integration test for the research events graph with real LLM calls."""
+    # --- Act ---
+    result = await research_events_app.ainvoke(sample_input_state)
+
+    # --- Assert ---
+    # The result structure has final_events nested under existing_events
+    assert "existing_events" in result
+    existing_events = result["existing_events"]
+    assert "final_events" in existing_events
+    final_events = existing_events["final_events"]
+    assert isinstance(final_events, CategoriesWithEvents)
+
+    # Check that key information is present somewhere in the final events
+    all_merged_text = " ".join(vars(final_events).values())
+
+    # Verify that some content was extracted and merged
+    assert len(all_merged_text) > 0
+    # The final events should contain some information from the existing events
+    assert (
+        "1920" in all_merged_text
+        or "Married" in all_merged_text
+        or "Nobel Prize" in all_merged_text
+    )
+
+    # Verify that URLs were processed
+    assert "urls" in result
+    assert result["urls"] == []  # All URLs should be processed

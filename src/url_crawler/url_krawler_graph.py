@@ -53,15 +53,15 @@ class ChunkWithCategory(TypedDict):
 
 
 class UrlCrawlerState(InputUrlCrawlerState):
-    content: str
-    chunks: list[str]
-    events: str
-    chunks_with_categories: list[ChunkWithCategory]
+    raw_scraped_content: str
+    text_chunks: list[str]
+    extracted_events: str
+    categorized_chunks: list[ChunkWithCategory]
 
 
 class OutputUrlCrawlerState(UrlCrawlerState):
-    events: str
-    raw_content: str
+    extracted_events: str
+    raw_scraped_content: str
 
 
 async def scrape_content(
@@ -72,17 +72,19 @@ async def scrape_content(
     print(f"Scraping content for URL: {url}")
     content = await url_crawl(url)
 
-    return Command(goto="divide_and_extract_chunks", update={"content": content})
+    return Command(
+        goto="divide_and_extract_chunks", update={"raw_scraped_content": content}
+    )
 
 
 async def divide_and_extract_chunks(
     state: UrlCrawlerState,
 ) -> Command[Literal["create_event_list"]]:
-    content = state.get("content", "")
+    content = state.get("raw_scraped_content", "")
     historical_figure = state.get("historical_figure", "")
 
     # 1. Chunks are divided into chunks by tokens
-    chunks = chunk_text_by_tokens(
+    text_chunks = chunk_text_by_tokens(
         content, chunk_size=CHUNK_SIZE, overlap_size=OVERLAP_SIZE
     )
 
@@ -92,8 +94,8 @@ async def divide_and_extract_chunks(
 
     # 3. Chunks are analyzed and simplified.
 
-    chunks_with_categories = []
-    for chunk in chunks:
+    categorized_chunks = []
+    for chunk in text_chunks:
         prompt = EXTRACT_EVENTS_PROMPT.format(
             historical_figure=historical_figure, text_chunk=chunk
         )
@@ -103,12 +105,12 @@ async def divide_and_extract_chunks(
         if response.tool_calls:
             tool_call_name = response.tool_calls[0]["name"]
         else:
-            chunks_with_categories.append({"content": chunk, "category": "UNKNOWN"})
+            categorized_chunks.append({"content": chunk, "category": "UNKNOWN"})
             continue
 
         tool_call_args = response.tool_calls[0]["args"]
         if tool_call_name == "RelevantChunk":
-            chunks_with_categories.append(
+            categorized_chunks.append(
                 {
                     "content": chunk,
                     "category": tool_call_name,
@@ -117,7 +119,7 @@ async def divide_and_extract_chunks(
             )
         elif tool_call_name == "PartialChunk":
             relevant_content = tool_call_args["relevant_content"]
-            chunks_with_categories.append(
+            categorized_chunks.append(
                 {
                     "content": relevant_content,
                     "category": tool_call_name,
@@ -125,7 +127,7 @@ async def divide_and_extract_chunks(
                 }
             )
         elif tool_call_name == "IrrelevantChunk":
-            chunks_with_categories.append(
+            categorized_chunks.append(
                 {
                     "content": "",
                     "category": tool_call_name,
@@ -134,29 +136,35 @@ async def divide_and_extract_chunks(
             )
         else:
             print("Invalid response: ", response)
-            chunks_with_categories.append(
+            categorized_chunks.append(
                 {"content": chunk, "category": "UNKNOWN", "original_chunk": chunk}
             )
             continue
 
     return Command(
         goto="create_event_list",
-        update={"chunks_with_categories": chunks_with_categories},
+        update={"categorized_chunks": categorized_chunks},
     )
 
 
 async def create_event_list(state: UrlCrawlerState) -> Command[Literal["__end__"]]:
-    chunks_with_categories = state.get("chunks_with_categories", [])
+    categorized_chunks = state.get("categorized_chunks", [])
     raw_content = ""
-    events = ""
-    for chunk_with_category in chunks_with_categories:
+    extracted_events = ""
+    for chunk_with_category in categorized_chunks:
         event_summary = await create_event_list_from_chunks(
             state, chunk_with_category["content"]
         )
-        events += event_summary
+        extracted_events += event_summary
         raw_content += chunk_with_category["original_chunk"]
 
-    return Command(goto=END, update={"events": events, "raw_content": raw_content})
+    return Command(
+        goto=END,
+        update={
+            "extracted_events": extracted_events,
+            "raw_scraped_content": raw_content,
+        },
+    )
 
 
 async def create_event_list_from_chunks(

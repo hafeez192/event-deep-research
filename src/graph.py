@@ -98,7 +98,7 @@ def research_events_func(prompt: str):
 async def create_messages_summary(
     state: SupervisorState, new_messages: list[MessageLikeRepresentation]
 ) -> str:
-    previous_messages_summary = state.get("messages_summary", "")
+    previous_messages_summary = state.get("conversation_summary", "")
     """Create a summary of the messages."""
     prompt = create_messages_summary_prompt.format(
         new_messages=new_messages,
@@ -115,8 +115,8 @@ async def supervisor_node(
     """The 'brain' of the agent. It decides the next action."""
     prompt = supervisor_tool_selector_prompt.format(
         person_to_research=state["person_to_research"],
-        event_summary=state.get("events", []),
-        messages_summary=state.get("messages_summary", ""),
+        event_summary=state.get("chronology_events", []),
+        messages_summary=state.get("conversation_summary", ""),
         max_iterations=5,
     )
 
@@ -131,15 +131,15 @@ async def supervisor_node(
 
     response = await llm_with_tools.ainvoke(prompt)
 
-    messages_summary = await create_messages_summary(state, [response])
+    conversation_summary = await create_messages_summary(state, [response])
 
     # The output is an AIMessage with tool_calls, which we add to the history
     return Command(
         goto="supervisor_tools",
         update={
-            "messages": [response],
-            "messages_summary": messages_summary,
-            "tool_call_iterations": state.get("tool_call_iterations", 0) + 1,
+            "conversation_history": [response],
+            "conversation_summary": conversation_summary,
+            "iteration_count": state.get("iteration_count", 0) + 1,
         },
     )
 
@@ -148,9 +148,9 @@ async def supervisor_tools_node(
     state: SupervisorState,
 ) -> Command[Literal["supervisor", "__end__"]]:
     """The 'hands' of the agent. Executes tools and returns a Command for routing."""
-    last_message = state["messages"][-1]
-    tool_call_iterations = state.get("tool_call_iterations", 0)
-    exceeded_allowed_iterations = tool_call_iterations >= MAX_TOOL_CALL_ITERATIONS
+    last_message = state["conversation_history"][-1]
+    iteration_count = state.get("iteration_count", 0)
+    exceeded_allowed_iterations = iteration_count >= MAX_TOOL_CALL_ITERATIONS
 
     # If the LLM made no tool calls, we finish.
     if not last_message.tool_calls or exceeded_allowed_iterations:
@@ -158,7 +158,7 @@ async def supervisor_tools_node(
 
     # This is the core logic for executing tools and updating state.
     all_tool_messages = []
-    events = state.get("events", [])
+    chronology_events = state.get("chronology_events", [])
 
     for tool_call in last_message.tool_calls:
         tool_name = tool_call["name"]
@@ -181,21 +181,23 @@ async def supervisor_tools_node(
 
         elif tool_name == "ResearchEventsTool":
             prompt = tool_args["prompt"]
-            result = await research_events_app.ainvoke(prompt=prompt, events=events)
+            result = await research_events_app.ainvoke(
+                prompt=prompt, existing_events=chronology_events
+            )
             all_tool_messages.append(
                 ToolMessage(
                     content=str(result), tool_call_id=tool_call["id"], name=tool_name
                 )
             )
 
-    messages_summary = await create_messages_summary(state, all_tool_messages)
+    conversation_summary = await create_messages_summary(state, all_tool_messages)
     # The Command helper tells the graph where to go next and what state to update.
     return Command(
         goto="supervisor",
         update={
-            "events": events,
-            "messages": all_tool_messages,
-            "messages_summary": messages_summary,
+            "chronology_events": chronology_events,
+            "conversation_history": all_tool_messages,
+            "conversation_summary": conversation_summary,
         },
     )
 

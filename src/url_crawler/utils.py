@@ -14,6 +14,8 @@ async def url_crawl(url: str) -> str:
     #     return "Henry Miller was an American novelist, short story writer and essayist. He was born in Yorkville, NYC on December 26, 1891. He moved to Paris in 1930. He wrote tropic of cancer, part of his series of novels about his life."
 
     content = await scrape_page_content(url)
+    if content is None:
+        return ""
     return remove_markdown_links(content)
 
 

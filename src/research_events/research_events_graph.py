@@ -4,19 +4,20 @@ from langgraph.graph import START, StateGraph
 from langgraph.types import Command
 from src.research_events.merge_events.merge_events_graph import merge_events_app
 from src.url_crawler.url_krawler_graph import url_crawler_app
+
 from state import CategoriesWithEvents
 
 
 class InputResearchEventsState(TypedDict):
     prompt: str
-    events: CategoriesWithEvents
+    existing_events: CategoriesWithEvents
 
 
 class ResearchEventsState(InputResearchEventsState):
     urls: list[str]
     # Add this temporary field
-    merged_events: CategoriesWithEvents
-    events_extracted_from_url: str
+    final_events: CategoriesWithEvents
+    raw_extracted_events: str
 
 
 def url_finder(
@@ -62,12 +63,12 @@ async def crawl_url(
 
     # Invoke the crawler subgraph
     result = await url_crawler_app.ainvoke({"url": url_to_process})
-    events_from_url = result["events"]
+    events_from_url = result["extracted_events"]
 
     # Go to the merge node, updating the state with the extracted events
     return Command(
         goto="merge_events_and_update",
-        update={"events_extracted_from_url": events_from_url},
+        update={"raw_extracted_events": events_from_url},
     )
 
 
@@ -75,14 +76,14 @@ async def merge_events_and_update(
     state: ResearchEventsState,
 ) -> Command[Literal["should_process_url_router"]]:
     """Merges new events, removes the processed URL, and loops back to the router."""
-    original_events = state.get("events", CategoriesWithEvents())
-    new_events = state.get("events_extracted_from_url", "")
+    existing_events = state.get("existing_events", CategoriesWithEvents())
+    new_events = state.get("raw_extracted_events", "")
 
     # Invoke the merge subgraph
-    merged_events = await merge_events_app.ainvoke(
+    final_events = await merge_events_app.ainvoke(
         {
-            "original_events": original_events,
-            "events_extracted_from_url": new_events,
+            "existing_events": existing_events,
+            "raw_extracted_events": new_events,
         }
     )
 
@@ -92,9 +93,9 @@ async def merge_events_and_update(
     return Command(
         goto="should_process_url_router",
         update={
-            "events": merged_events,
+            "existing_events": final_events,
             "urls": remaining_urls,
-            "events_extracted_from_url": [],  # Clear the temporary state
+            "raw_extracted_events": "",  # Clear the temporary state
         },
     )
 

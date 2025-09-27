@@ -12,24 +12,24 @@ from state import CategoriesWithEvents
 class InputMergeEventsState(TypedDict):
     """The complete state for the event merging sub-graph."""
 
-    original_events: CategoriesWithEvents
-    events_extracted_from_url: str
+    existing_events: CategoriesWithEvents
+    raw_extracted_events: str
 
 
 class MergeEventsState(InputMergeEventsState):
-    extracted_events_in_categories: CategoriesWithEvents
-    merged_events: CategoriesWithEvents
+    categorized_events: CategoriesWithEvents
+    final_events: CategoriesWithEvents
 
 
 class OutputMergeEventsState(MergeEventsState):
-    merged_events: CategoriesWithEvents  # includes the origianl events + the events from the new events
+    final_events: CategoriesWithEvents  # includes the existing events + the events from the new events
 
 
 async def categorize_events(
     state: MergeEventsState,
 ) -> Command[Literal["combine_new_and_original_events"]]:
-    events_extracted_from_url = state.get("events_extracted_from_url", "")
-    print("events_extracted_from_url", events_extracted_from_url)
+    raw_extracted_events = state.get("raw_extracted_events", "")
+    print("raw_extracted_events", raw_extracted_events)
     categorize_events_prompt = """
     You are a helpful assistant that will categorize the events into the 4 categories.
 
@@ -50,7 +50,7 @@ async def categorize_events(
     </Rules>
     """
     categorize_events_prompt = categorize_events_prompt.format(
-        events=events_extracted_from_url
+        events=raw_extracted_events
     )
 
     structured_llm = model_for_structured.with_structured_output(CategoriesWithEvents)
@@ -58,7 +58,7 @@ async def categorize_events(
     response = await structured_llm.ainvoke(categorize_events_prompt)
     return Command(
         goto="combine_new_and_original_events",
-        update={"extracted_events_in_categories": response},
+        update={"categorized_events": response},
     )
 
 
@@ -91,39 +91,39 @@ async def combine_new_and_original_events(state: MergeEventsState) -> Command:
     """Merge original and new events for each category using an LLM."""
     print("Combining new and original events...")
 
-    original_events_raw = state.get(
-        "original_events",
+    existing_events_raw = state.get(
+        "existing_events",
         CategoriesWithEvents(early="", personal="", career="", legacy=""),
     )
     new_events_raw = state.get(
-        "extracted_events_in_categories",
+        "categorized_events",
         CategoriesWithEvents(early="", personal="", career="", legacy=""),
     )
 
     # Convert to proper Pydantic models if they're dicts
-    original_events = ensure_categories_with_events(original_events_raw)
+    existing_events = ensure_categories_with_events(existing_events_raw)
     new_events = ensure_categories_with_events(new_events_raw)
 
     if not new_events:
-        print("No new events found. Keeping original events.")
-        return Command(goto="__end__", update={"merged_events": original_events})
+        print("No new events found. Keeping existing events.")
+        return Command(goto="__end__", update={"final_events": existing_events})
 
     merge_tasks = []
     categories = CategoriesWithEvents.model_fields.keys()
 
     for category in categories:
         # Now you can safely use getattr since they're guaranteed to be Pydantic models
-        original_text = getattr(original_events, category, "").strip()
+        existing_text = getattr(existing_events, category, "").strip()
         new_text = getattr(new_events, category, "").strip()
 
-        if not (original_text or new_text):
+        if not (existing_text or new_text):
             continue  # nothing to merge in this category
 
-        original_display = original_text if original_text else "No events"
+        existing_display = existing_text if existing_text else "No events"
         new_display = new_text if new_text else "No events"
 
         prompt = MERGE_EVENTS_TEMPLATE.format(
-            original=original_display,
+            original=existing_display,
             new=new_display,
         )
         merge_tasks.append((category, model_for_structured.ainvoke(prompt)))
@@ -139,10 +139,10 @@ async def combine_new_and_original_events(state: MergeEventsState) -> Command:
     # Ensure all categories are included
     for category in CategoriesWithEvents.model_fields.keys():
         if category not in final_merged_dict:
-            final_merged_dict[category] = getattr(original_events, category, "")
+            final_merged_dict[category] = getattr(existing_events, category, "")
 
     final_merged_output = CategoriesWithEvents(**final_merged_dict)
-    return Command(goto="__end__", update={"merged_events": final_merged_output})
+    return Command(goto="__end__", update={"final_events": final_merged_output})
 
 
 merge_events_graph_builder = StateGraph(

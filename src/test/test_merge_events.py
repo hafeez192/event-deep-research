@@ -19,13 +19,13 @@ from state import CategoriesWithEvents
 def sample_input_state() -> dict:
     """Provide a sample input state for the merge_events_app graph."""
     return {
-        "original_events": CategoriesWithEvents(
+        "existing_events": CategoriesWithEvents(
             early="Born in 1920 in Paris.",
             personal="Married in 1945.",
             career="Published first novel in 1950.",
             legacy="Won Nobel Prize in 1980.",
         ),
-        "events_extracted_from_url": "Born in 1920 in Paris, France. Started writing poetry at age 15. Moved to London in 1942.",
+        "raw_extracted_events": "Born in 1920 in Paris, France. Started writing poetry at age 15. Moved to London in 1942.",
     }
 
 
@@ -99,8 +99,8 @@ async def test_merge_events_with_mocked_llm(
         result = await merge_events_app.ainvoke(sample_input_state)
 
     # --- Assert: Verify the output ---
-    assert "merged_events" in result
-    merged_events = result["merged_events"]
+    assert "final_events" in result
+    merged_events = result["final_events"]
 
     assert isinstance(merged_events, CategoriesWithEvents)
     assert (
@@ -112,52 +112,7 @@ async def test_merge_events_with_mocked_llm(
     assert merged_events.legacy == "Won Nobel Prize in 1980."
 
 
-# # @pytest.mark.skip(reason="Skip mocked LLM test for now")
-# @pytest.mark.asyncio
-# async def test_merge_events_with_different_mock_data(
-#     sample_input_state: dict, mock_structured_llm
-# ):
-#     """Example test showing how to reuse the mock_structured_llm fixture with different data."""
-#     # --- Arrange: Different Mock Data Setup ---
-#     mock_categorized_events = CategoriesWithEvents(
-#         early="Born in 1950 in New York.",
-#         personal="Graduated from college in 1972.",
-#         career="Started tech company in 1980.",
-#         legacy="Became billionaire by 2000.",
-#     )
-
-#     mock_merge_responses = [
-#         MockResponse("Born in 1950 in New York, USA."),
-#         MockResponse("Graduated from college in 1972. Married in 1975."),
-#         MockResponse("Started tech company in 1980. IPO in 1995."),
-#         MockResponse("Became billionaire by 2000. Retired in 2010."),
-#     ]
-
-#     # --- Act: Execute the graph with patched dependencies ---
-#     with patch.object(merge_events_graph, "model_for_structured") as mock_model:
-#         # Configure the mock using the reusable fixture
-#         configured_mock = mock_structured_llm(
-#             mock_categorized_events, mock_merge_responses
-#         )
-
-#         # Apply the mock configuration
-#         mock_model.ainvoke = configured_mock.ainvoke
-#         mock_model.with_structured_output.return_value = (
-#             configured_mock.with_structured_output.return_value
-#         )
-
-#         result = await merge_events_app.ainvoke(sample_input_state)
-
-#     # --- Assert: Verify the output ---
-#     assert "merged_events" in result
-#     merged_events = result["merged_events"]
-#     assert isinstance(merged_events, CategoriesWithEvents)
-#     assert "1950" in merged_events.early
-#     assert "tech company" in merged_events.career
-#     assert "billionaire" in merged_events.legacy
-
-
-# @pytest.mark.skip(reason="Skip real LLM test for now")
+@pytest.mark.skip(reason="Skip real LLM test for now")
 @pytest.mark.llm
 @pytest.mark.asyncio
 async def test_merge_events_with_real_llm(sample_input_state: dict):
@@ -166,8 +121,8 @@ async def test_merge_events_with_real_llm(sample_input_state: dict):
     result = await merge_events_app.ainvoke(sample_input_state)
 
     # --- Assert ---
-    assert "merged_events" in result
-    merged = result["merged_events"]
+    assert "final_events" in result
+    merged = result["final_events"]
     assert isinstance(merged, CategoriesWithEvents)
 
     all_merged_text = " ".join(vars(merged).values())
