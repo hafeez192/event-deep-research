@@ -1,8 +1,7 @@
 from typing import Type, TypeVar, Union
 
 from pydantic import BaseModel
-
-from state import CategoriesWithEvents
+from src.state import CategoriesWithEvents
 
 T = TypeVar("T", bound=BaseModel)
 

@@ -5,10 +5,10 @@
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from src.state import CategoriesWithEvents
 
 # Imports are relative to the src directory (configured in pyproject.toml pythonpath)
 from research_events.research_events_graph import research_events_app
-from state import CategoriesWithEvents
 
 
 @pytest.fixture

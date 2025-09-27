@@ -5,11 +5,11 @@
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from src.state import CategoriesWithEvents
 
 # Imports are relative to the src directory (configured in pyproject.toml pythonpath)
 from research_events.merge_events import merge_events_graph
 from research_events.merge_events.merge_events_graph import merge_events_app
-from state import CategoriesWithEvents
 
 # ## Refactoring Note: Import the module containing the object to be patched.
 # This makes the patch call cleaner and more robust against refactoring.
