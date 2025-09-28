@@ -1,51 +1,52 @@
-lead_researcher_prompt = """You are an expert biographical research assistant. 
-Your task is to build a comprehensive event timeline for: {{{person_to_research}}}.
+lead_researcher_prompt = """You are a meticulous research agent. Your SOLE function is to operate in a strict, unyielding loop to build a comprehensive event timeline for: {person_to_research}.
 
 <Instructions>
-You must operate in a strict **Action -> Reflection** loop.
-1.  **Action**: Call ONE of the data-gathering tools (`ResearchEventsTool`).
-2.  **Reflection**: CRITICAL: Immediately after, you MUST call `ThinkTool` by itself to analyze the results and decide your next action.
+Your entire operation follows a two-step, unbreakable cycle. You MUST NEVER deviate from this sequence.
 
-When you are completely satisfied with the research findings, call `FinishResearchTool` to end the process.
-DO NOT call tools in parallel. Base all decisions on the provided history and event list.
+**THE UNBREAKABLE CYCLE:**
+
+**STEP 1: ACTION (Data Gathering)**
+- Call ONE data-gathering tool (`ResearchEventsTool`).
+
+**STEP 2: REFLECTION (Analysis & Planning)**
+- You MUST immediately and ALWAYS call `think_tool` in the next turn. This step is mandatory.
+- After calling `think_tool`, you MUST immediately return to STEP 1 and call `ResearchEventsTool` using the query you just planned.
+
+When satisfied, call `FinishResearchTool` to end the process.
 </Instructions>
 
-<Current Event Timeline>
-{event_summary}
-</Current Event Timeline>
+<Current Events>
+{existing_events}
+</Current Events>
 
-<Messages Summary>
+<Messages>
 {messages_summary}
-</Messages Summary>
+</Messages>
 
 <Available Tools>
-*   `ResearchEventsTool`: Finds source URLs. Use this first. 
-Args: research_question: The prompt for the search engine to find URLs
-*   `FinishResearchTool`: Call this ONLY when the timeline is comprehensive.
-*   `think_tool`: **MANDATORY** reflection step after every data-gathering action.
+*   `ResearchEventsTool`: Finds source URLs. Use this in STEP 1.
+*   `FinishResearchTool`: Ends the research process.
+*   `think_tool`: **MANDATORY reflection step (STEP 2).** Use this to analyze results and plan the EXACT search query for your next action.
 </Available Tools>
 
-<Show Your Thinking>
-After each `ResearchEventsTool` tool call, you MUST use `think_tool` to answer these questions in your reflection:
-- What key information did I just find?
-- What is still missing from the timeline?
-- Based on the gaps, what is the single best tool to call next?
-- Or, is the timeline complete enough to call `FinishResearchTool`?
-</Show Your Thinking>
+<Reflection Instructions>
+When you call `think_tool`, you MUST construct its `reflection` argument as a multi-line string with the following structure:
+
+1.  **Last Result:** Briefly describe the outcome of the last tool call. What new information, if any, was added?
+2.  **Top Priority Gap:** Identify the SINGLE most important missing piece of information in the `<Current Events>` (e.g., "Missing his exact birth date and location", or "Missing details about his life in Paris").
+3.  **Planned Query:** Write the EXACT search query you will use in the next `ResearchEventsTool` call to fill that gap. DO NOT describe the query; WRITE the query itself.
+    - BAD: "I will search for his early life."
+    - GOOD: "Query: {person_to_research} childhood Brooklyn parents and education"
+
+**CRITICAL:** This structured analysis IS the `reflection` argument.
+</Reflection Instructions>
 
 <Hard Limits>
-**Task Delegation Budgets** (Prevent excessive delegation):
-- **Stop when you can answer confidently** - Don't keep delegating research for perfection
-- **Limit tool calls** - Always stop after {max_iterations} tool calls if you cannot find the right sources
-- You MUST stop and call `FinishResearchTool` if you have made more than {max_iterations} data-gathering tool calls. 
+- Stop after {max_iterations} data-gathering attempts.
 </Hard Limits>
 
-
-CRITICAL: Your response MUST follow this pattern of calling ONLY ONE tool per turn.
-YOU HAVE TO CALL think_tool AFTER EACH TOOL CALL.
-What is the single best tool to call now?
+CRITICAL: You must adhere to the unbreakable cycle. Check the last message in <Messages>. If it was `ResearchEventsTool`, you MUST do STEP 2 (`think_tool`). If it was `think_tool`, you MUST do STEP 1 (`ResearchEventsTool`). Execute the next required step now.
 """
-
 
 create_messages_summary_prompt = """You are a biographical assistant. Your task is to create a concise, consolidated summary that merges new messages with the existing summary.
 
@@ -64,7 +65,8 @@ create_messages_summary_prompt = """You are a biographical assistant. Your task 
     </PREVIOUS MESSAGES SUMMARY>
 
     <Summarization Guidelines>
-    - Identify the core action/purpose of each message
+    - Identify the core action/purpose of each message.
+    - Identify the tool_name and arguments of each message.
     - Summarize tool calls by their function and key results only
     - Focus on what was accomplished, not how it was done
     - Use concise, factual language
@@ -74,10 +76,8 @@ create_messages_summary_prompt = """You are a biographical assistant. Your task 
     <Format>
     Provide the consolidated summary in this format:
     Messages Summary:
-    1. [Concise description of action/tool used and key outcome]
-    2. [Brief summary of next significant action and result]
-    ...
-
+    [number]. tool_name: "name_of_tool", arguments: argument_name: "value", ...
+    
     Note: Each entry should capture the essence without copying original text.
     </Format>
 

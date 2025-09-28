@@ -19,29 +19,22 @@ async def create_messages_summary(
     return response.content
 
 
-@tool(description="Strategic reflection tool for research planning")
+@tool(
+    description="Mandatory reflection tool. Analyze results and plan the next search query."
+)
 def think_tool(reflection: str) -> str:
-    """Tool for strategic reflection on research progress and decision-making.
+    """Mandatory reflection step. Use this to analyze the last result, identify gaps, and formulate the EXACT query for the next search.
 
-    Use this tool after each search to analyze what are the current events and plan next step systematically.
-    This creates a deliberate pause in the research workflow for quality decision-making.
+    You MUST use this tool immediately after every ResearchEventsTool call.
 
-    When to use:
-    - After finding new events: Which new events have been added?
-    - Which events may be missing or need to be further researched?
-    - When assessing events gaps: What specific information am I still missing?
-    - Before concluding research: Is the chronology sufficient to know in detail the life of the person?
-
-    Reflection should address:
-    1. Analysis of current events - What concrete information have I gathered?
-    2. Gap assessment - What crucial information is still missing?
-    3. Quality evaluation - Do I have sufficient events and are these enough explained for a good chronology?
-    4. Strategic decision - Should I continue searching or provide my chronology?
+    The `reflection` argument must follow the structure defined in the system prompt, culminating in the precise search query you will use next.
 
     Args:
-        reflection: Your detailed reflection on research progress, events, gaps, and next steps
+        reflection: Structured analysis of the last result, current gaps, and the PLANNED QUERY for the next step.
 
     Returns:
-        Confirmation that reflection was recorded for decision-making
+        Confirmation and instruction to proceed to the next step.
     """
-    return f"Reflection recorded: {reflection}"
+    # The return value is crucial. It becomes the ToolMessage the LLM sees next.
+    # By explicitly telling it what to do, we break the loop.
+    return f"Reflection recorded. {reflection}"
