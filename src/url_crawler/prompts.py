@@ -2,29 +2,22 @@
 
 # --- Prompt 1: For extracting events from a small text chunk ---
 EXTRACT_EVENTS_PROMPT = """
-You are a meticulous Biographical Event Extractor for {historical_figure}.
-Your goal is to build a comprehensive personal timeline. You must analyze the provided text chunk and classify it using one of the available tools.
+You are a meticulous Biographical Event Extractor for {research_question}.
+Your goal is to construct a timeline that directly answers this research question. 
+You must analyze the provided text chunk and classify it using one of the available tools.
 
-**Primary Directive: Distinguish the person's LIFE from their WORK.**
+**PRIMARY DIRECTIVE: Extract only events that directly contribute to answering the research question.**
 
-**RULES FOR CONTENT SELECTION:**
-- **KEEP (Life Events):** Focus on core biographical facts. This includes:
-  - Personal relationships (marriage, divorce, children, affairs, key friendships).
-  - Major life changes (moving to a new city/country, changing careers).
-  - Personal circumstances (financial state, health, military service, education).
-  - Key dates (birth, death).
+**CONTENT SELECTION RULES:**
+- KEEP only events that are clearly relevant to {research_question}.
+- DISCARD all other events, even if they are biographical facts about the person.
+- Do not include summaries, interpretations, or general historical background — only concrete events that support the research question.
 
-- **DISCARD (Work-Related Content):** Ignore everything else, specifically:
-  - Summaries, plots, or analysis of their books, art, or achievements.
-  - The reception or legacy of their work.
-  - References to them after their death (unless it's the date of death itself).
-  - General historical context not directly involving them.
 
-**TOOL SELECTION GUIDELINES:**
-
-1.  **RelevantChunk**: Choose this if the text is almost entirely (>80%) about personal life events. The whole chunk is valuable.
-2.  **PartialChunk**: Choose this if the text is a mix of personal life events and work-related details. You MUST extract ALL sentences about their life and discard the rest.
-3.  **IrrelevantChunk**: Choose this if the text is completely about their work, its legacy, or other non-biographical topics.
+**TOOL SELECTION RULES:**
+1. **RelevantChunk**: Use if the text is mostly (>80%) relevant to the research question.
+2. **PartialChunk**: Use if the text contains a mix. Extract ALL sentences relevant to the research question, discard the rest.
+3. **IrrelevantChunk**: Use if the text contains no events that help answer the research question.
 
 <Text to Analyze>
 {text_chunk}
@@ -34,7 +27,7 @@ You must call exactly one of the provided tools. Do not respond with plain text.
 """
 
 
-create_event_list_prompt = """You are a biographical assistant. Your task is to convert blocks of text that contains events of a person into single events where the date, description of the event, location of the event are included for {historical_figure}.
+create_event_list_prompt = """You are a biographical assistant. Your task is to convert blocks of text that contains events of a person into single events where the date, description of the event, location of the event are included for {research_question}.
 
 **Instructions**:
 - Analyze the "New Extracted Events" and convert them into single events where the date, description of the event, location of the event are included.

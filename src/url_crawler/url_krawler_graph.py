@@ -43,7 +43,7 @@ class IrrelevantChunk(BaseModel):
 
 class InputUrlCrawlerState(TypedDict):
     url: str
-    historical_figure: str
+    research_question: str
 
 
 class ChunkWithCategory(TypedDict):
@@ -81,7 +81,7 @@ async def divide_and_extract_chunks(
     state: UrlCrawlerState,
 ) -> Command[Literal["create_event_list"]]:
     content = state.get("raw_scraped_content", "")
-    historical_figure = state.get("historical_figure", "")
+    research_question = state.get("research_question", "")
 
     # 1. Chunks are divided into chunks by tokens
     text_chunks = chunk_text_by_tokens(
@@ -95,9 +95,9 @@ async def divide_and_extract_chunks(
     # 3. Chunks are analyzed and simplified.
 
     categorized_chunks = []
-    for chunk in text_chunks:
+    for chunk in text_chunks[0:1]:
         prompt = EXTRACT_EVENTS_PROMPT.format(
-            historical_figure=historical_figure, text_chunk=chunk
+            research_question=research_question, text_chunk=chunk
         )
         response = await model_tools.ainvoke(prompt)
 
@@ -173,12 +173,12 @@ async def create_event_list_from_chunks(
     """Chunks large text, extracts events in parallel, and consolidates them
     with the previous summary.
     """
-    historical_figure = state.get("historical_figure", "")
+    research_question = state.get("research_question", "")
 
     # 4. Consolidate new events with the previous summary
     if chunk_content:
         prompt = create_event_list_prompt.format(
-            historical_figure=historical_figure, newly_extracted_events=chunk_content
+            research_question=research_question, newly_extracted_events=chunk_content
         )
 
         final_summary = await model_for_big_queries.ainvoke(prompt)
