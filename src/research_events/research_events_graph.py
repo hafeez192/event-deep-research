@@ -15,8 +15,12 @@ class InputResearchEventsState(TypedDict):
 class ResearchEventsState(InputResearchEventsState):
     urls: list[str]
     # Add this temporary field
-    final_events: CategoriesWithEvents
+    combined_events: CategoriesWithEvents
     raw_extracted_events: str
+
+
+class ResearchEventsState(TypedDict):
+    combined_events: CategoriesWithEvents
 
 
 def url_finder(
@@ -79,7 +83,7 @@ async def merge_events_and_update(
     new_events = state.get("raw_extracted_events", "")
 
     # Invoke the merge subgraph
-    final_events = await merge_events_app.ainvoke(
+    combined_events = await merge_events_app.ainvoke(
         {
             "existing_events": existing_events,
             "raw_extracted_events": new_events,
@@ -92,7 +96,7 @@ async def merge_events_and_update(
     return Command(
         goto="should_process_url_router",
         update={
-            "existing_events": final_events,
+            "combined_events": combined_events,
             "urls": remaining_urls,
             "raw_extracted_events": "",  # Clear the temporary state
         },

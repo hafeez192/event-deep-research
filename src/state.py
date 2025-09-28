@@ -85,6 +85,7 @@ class ResearchEventsTool(BaseModel):
     high-quality sources (like Wikipedia, Britannica) before you can start extracting events.
     """
 
+    research_question: str
     pass  # No arguments needed
 
 
@@ -123,7 +124,8 @@ class SupervisorStateInput(TypedDict):
 class SupervisorState(SupervisorStateInput):
     """The complete state for the main supervisor graph."""
 
-    chronology_events: List[ChronologyEvent]
+    existing_events: CategoriesWithEvents
+    final_events: List[ChronologyEvent]
     conversation_history: Annotated[list[MessageLikeRepresentation], override_reducer]
     conversation_summary: str
     iteration_count: int = 0

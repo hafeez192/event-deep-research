@@ -4,9 +4,9 @@ from langchain_core.messages import ToolMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 from src.llm_service import model_for_tools
-from src.prompts import supervisor_tool_selector_prompt
-from src.research_events.research_events_graph import research_events_app
+from src.prompts import lead_researcher_prompt
 from src.state import (
+    CategoriesWithEvents,
     FinishResearchTool,
     ResearchEventsTool,
     SupervisorState,
@@ -21,9 +21,9 @@ async def supervisor_node(
     state: SupervisorState,
 ) -> Command[Literal["supervisor_tools"]]:
     """The 'brain' of the agent. It decides the next action."""
-    prompt = supervisor_tool_selector_prompt.format(
+    prompt = lead_researcher_prompt.format(
         person_to_research=state["person_to_research"],
-        event_summary=state.get("chronology_events", []),
+        event_summary=state.get("existing_events", []),
         messages_summary=state.get("conversation_summary", ""),
         max_iterations=5,
     )
@@ -66,7 +66,7 @@ async def supervisor_tools_node(
 
     # This is the core logic for executing tools and updating state.
     all_tool_messages = []
-    chronology_events = state.get("chronology_events", [])
+    existing_events = state.get("existing_events", [])
 
     for tool_call in last_message.tool_calls:
         tool_name = tool_call["name"]
@@ -88,10 +88,14 @@ async def supervisor_tools_node(
             )
 
         elif tool_name == "ResearchEventsTool":
-            prompt = tool_args["prompt"]
-            result = await research_events_app.ainvoke(
-                prompt=prompt, existing_events=chronology_events
-            )
+            prompt = tool_args["research_question"]
+            # result = await research_events_app.ainvoke(
+            #     prompt=prompt, existing_events=existing_events
+            # )
+            # combined_events = result["combined_events"]
+            result = ""
+            combined_events = CategoriesWithEvents(early="test")
+            existing_events = combined_events
             all_tool_messages.append(
                 ToolMessage(
                     content=str(result), tool_call_id=tool_call["id"], name=tool_name
@@ -103,7 +107,7 @@ async def supervisor_tools_node(
     return Command(
         goto="supervisor",
         update={
-            "chronology_events": chronology_events,
+            "existing_events": existing_events,
             "conversation_history": all_tool_messages,
             "conversation_summary": conversation_summary,
         },
