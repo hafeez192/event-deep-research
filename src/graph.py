@@ -1,11 +1,10 @@
 from typing import Literal
 
-from langchain_core.messages import MessageLikeRepresentation, ToolMessage
-from langchain_core.tools import tool
+from langchain_core.messages import ToolMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 from src.llm_service import model_for_tools
-from src.prompts import create_messages_summary_prompt, supervisor_tool_selector_prompt
+from src.prompts import supervisor_tool_selector_prompt
 from src.research_events.research_events_graph import research_events_app
 from src.state import (
     FinishResearchTool,
@@ -13,100 +12,9 @@ from src.state import (
     SupervisorState,
     SupervisorStateInput,
 )
+from src.utils import create_messages_summary, think_tool
 
 MAX_TOOL_CALL_ITERATIONS = 5
-
-
-@tool(description="Strategic reflection tool for research planning")
-def think_tool(reflection: str) -> str:
-    """Tool for strategic reflection on research progress and decision-making.
-
-    Use this tool after each search to analyze what are the current events and plan next step systematically.
-    This creates a deliberate pause in the research workflow for quality decision-making.
-
-    When to use:
-    - After finding new events: Which new events have been added?
-    - Which events may be missing or need to be further researched?
-    - When assessing events gaps: What specific information am I still missing?
-    - Before concluding research: Is the chronology sufficient to know in detail the life of the person?
-
-    Reflection should address:
-    1. Analysis of current events - What concrete information have I gathered?
-    2. Gap assessment - What crucial information is still missing?
-    3. Quality evaluation - Do I have sufficient events and are these enough explained for a good chronology?
-    4. Strategic decision - Should I continue searching or provide my chronology?
-
-    Args:
-        reflection: Your detailed reflection on research progress, events, gaps, and next steps
-
-    Returns:
-        Confirmation that reflection was recorded for decision-making
-    """
-    return f"Reflection recorded: {reflection}"
-
-
-def research_events_func(prompt: str):
-    """Mock implementation for finding URLs.
-
-    Args:
-        prompt: The prompt for the search engine to find URLs
-
-    Returns:
-        A list of URLs
-    """
-    print("--- Executing Mock URL Finder ---")
-    print(f"Prompt: {prompt}")
-
-    urls = (
-        [
-            "https://en.wikipedia.org/wiki/Henry_Miller",
-        ],
-    )
-    new_events = []
-    for url in urls:
-        ## Trigger Url Crawler and what do we want to get?
-        if "wikipedia" in url:
-            events_from_url = """
-                - Birth of Henry Miller in 1891 in New York City
-                - Moved to Paris in 1930
-            """
-
-            merged_events = [
-                {
-                    "id": 1,
-                    "name": "Birth",
-                    "description": "Born in Yorkville, NYC.",
-                    "source": "Wikipedia",
-                    "date": {"year": 1891},
-                    "location": "New York City",
-                },
-                {
-                    "id": 2,
-                    "name": "Moved to Paris",
-                    "description": "Moved to Paris, a defining moment.",
-                    "source": "Wikipedia",
-                    "date": {"year": 1930},
-                    "location": "Paris, France",
-                },
-            ]
-            new_events.append(merged_events)
-        # elif "britannica" in url:
-
-    return new_events
-
-
-async def create_messages_summary(
-    state: SupervisorState, new_messages: list[MessageLikeRepresentation]
-) -> str:
-    previous_messages_summary = state.get("conversation_summary", "")
-    """Create a summary of the messages."""
-    prompt = create_messages_summary_prompt.format(
-        new_messages=new_messages,
-        previous_messages_summary=previous_messages_summary,
-    )
-
-    response = await model_for_tools.ainvoke(prompt)
-    return response.content
 
 
 async def supervisor_node(
