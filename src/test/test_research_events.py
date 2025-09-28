@@ -15,7 +15,7 @@ from research_events.research_events_graph import research_events_app
 def sample_input_state() -> dict:
     """Provide a sample input state for the research_events_app graph."""
     return {
-        "prompt": "Research the life of Henry Miller",
+        "research_question": "Research the life of Henry Miller",
         "existing_events": CategoriesWithEvents(
             early="Born in 1920 in Paris.",
             personal="Married in 1945.",

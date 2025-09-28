@@ -8,7 +8,7 @@ from src.url_crawler.url_krawler_graph import url_crawler_app
 
 
 class InputResearchEventsState(TypedDict):
-    prompt: str
+    research_question: str
     existing_events: CategoriesWithEvents
 
 
@@ -26,14 +26,14 @@ class ResearchEventsState(TypedDict):
 def url_finder(
     state: ResearchEventsState,
 ) -> Command[Literal["should_process_url_router"]]:
-    """Find the urls for the prompt"""
-    prompt = state.get("prompt", "")
+    """Find the urls for the research_question"""
+    research_question = state.get("research_question", "")
 
-    if not prompt:
-        raise ValueError("Prompt is required")
+    if not research_question:
+        raise ValueError("research_question is required")
 
     ### call to tavily/duck duck go
-    # urls = model.invoke(prompt)
+    # urls = model.invoke(research_question)
 
     urls = [
         # "https://en.wikipedia.org/wiki/Henry_Miller",
