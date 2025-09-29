@@ -2,7 +2,7 @@ from typing import Literal, TypedDict
 from urllib.parse import urlparse
 
 from langchain_tavily import TavilySearch
-from langgraph.graph import START, StateGraph
+from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 from src.research_events.merge_events.merge_events_graph import merge_events_app
 from src.state import CategoriesWithEvents
@@ -39,6 +39,7 @@ def url_finder(
 
     print("used_domains", used_domains)
 
+    # Uncomment to finisht he graph fast for testing
     # return Command(
     #     goto=END,
     #     update={
@@ -114,7 +115,7 @@ def should_process_url_router(
         print("No URLs remaining. Routing to __end__.")
         # Otherwise, end the graph execution
         return Command(
-            goto="__end__",
+            goto=END,
         )
 
 
@@ -185,4 +186,5 @@ research_events_builder.add_node("merge_events_and_update", merge_events_and_upd
 # Set the entry point
 research_events_builder.add_edge(START, "url_finder")
 
-research_events_app = research_events_builder.compile()
+
+research_events_app = research_events_builder

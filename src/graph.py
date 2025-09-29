@@ -1,6 +1,7 @@
 from typing import Literal
 
 from langchain_core.messages import ToolMessage
+from langfuse import get_client
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 from src.llm_service import model_for_tools
@@ -14,6 +15,15 @@ from src.state import (
     SupervisorStateInput,
 )
 from src.utils import create_messages_summary, think_tool
+
+langfuse = get_client()
+
+# Verify connection
+if langfuse.auth_check():
+    print("Langfuse client is authenticated and ready!")
+else:
+    print("Authentication failed. Please check your credentials and host.")
+
 
 MAX_TOOL_CALL_ITERATIONS = 4
 
@@ -47,7 +57,7 @@ async def supervisor_node(
 
     # The output is an AIMessage with tool_calls, which we add to the history
     return Command(
-        goto="supervisor_tools",
+        goto=END,
         update={
             "conversation_history": [response],
             "conversation_summary": conversation_summary,
@@ -159,5 +169,9 @@ workflow.add_node("supervisor_tools", supervisor_tools_node)
 
 workflow.add_edge(START, "supervisor")
 
+from langfuse.langchain import CallbackHandler
 
-graph = workflow.compile()
+langfuse_handler = CallbackHandler()
+
+
+graph = workflow.compile().with_config({"callbacks": [langfuse_handler]})
