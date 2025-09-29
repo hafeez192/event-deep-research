@@ -150,7 +150,7 @@ async def merge_events_and_update(
     new_events = state.get("raw_extracted_events", "")
 
     # Invoke the merge subgraph
-    existing_events = await merge_events_app.ainvoke(
+    result = await merge_events_app.ainvoke(
         {
             "existing_events": existing_events,
             "raw_extracted_events": new_events,
@@ -163,7 +163,7 @@ async def merge_events_and_update(
     return Command(
         goto="should_process_url_router",
         update={
-            "existing_events": existing_events,
+            "existing_events": result["existing_events"],
             "urls": remaining_urls,
             "used_domains": used_domains,
             "raw_extracted_events": "",  # Clear the temporary state
@@ -187,4 +187,4 @@ research_events_builder.add_node("merge_events_and_update", merge_events_and_upd
 research_events_builder.add_edge(START, "url_finder")
 
 
-research_events_app = research_events_builder
+research_events_app = research_events_builder.compile()

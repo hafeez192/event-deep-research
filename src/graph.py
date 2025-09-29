@@ -25,7 +25,7 @@ else:
     print("Authentication failed. Please check your credentials and host.")
 
 
-MAX_TOOL_CALL_ITERATIONS = 4
+MAX_TOOL_CALL_ITERATIONS = 7
 
 
 async def supervisor_node(
@@ -57,7 +57,7 @@ async def supervisor_node(
 
     # The output is an AIMessage with tool_calls, which we add to the history
     return Command(
-        goto=END,
+        goto="supervisor_tools",
         update={
             "conversation_history": [response],
             "conversation_summary": conversation_summary,

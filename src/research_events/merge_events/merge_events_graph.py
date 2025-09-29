@@ -16,12 +16,11 @@ class InputMergeEventsState(TypedDict):
 
 
 class MergeEventsState(InputMergeEventsState):
-    categorized_events: CategoriesWithEvents
-    final_events: CategoriesWithEvents
+    extracted_events_categorized: CategoriesWithEvents
 
 
-class OutputMergeEventsState(MergeEventsState):
-    final_events: CategoriesWithEvents  # includes the existing events + the events from the new events
+class OutputMergeEventsState(TypedDict):
+    existing_events: CategoriesWithEvents  # includes the existing events + the events from the new events
 
 
 async def categorize_events(
@@ -57,7 +56,7 @@ async def categorize_events(
     response = await structured_llm.ainvoke(categorize_events_prompt)
     return Command(
         goto="combine_new_and_original_events",
-        update={"categorized_events": response},
+        update={"extracted_events_categorized": response},
     )
 
 
@@ -95,7 +94,7 @@ async def combine_new_and_original_events(state: MergeEventsState) -> Command:
         CategoriesWithEvents(early="", personal="", career="", legacy=""),
     )
     new_events_raw = state.get(
-        "categorized_events",
+        "extracted_events_categorized",
         CategoriesWithEvents(early="", personal="", career="", legacy=""),
     )
 
@@ -105,7 +104,7 @@ async def combine_new_and_original_events(state: MergeEventsState) -> Command:
 
     if not new_events:
         print("No new events found. Keeping existing events.")
-        return Command(goto="__end__", update={"final_events": existing_events})
+        return Command(goto="__end__", update={"existing_events": existing_events})
 
     merge_tasks = []
     categories = CategoriesWithEvents.model_fields.keys()
@@ -141,7 +140,7 @@ async def combine_new_and_original_events(state: MergeEventsState) -> Command:
             final_merged_dict[category] = getattr(existing_events, category, "")
 
     final_merged_output = CategoriesWithEvents(**final_merged_dict)
-    return Command(goto="__end__", update={"final_events": final_merged_output})
+    return Command(goto="__end__", update={"existing_events": final_merged_output})
 
 
 merge_events_graph_builder = StateGraph(
