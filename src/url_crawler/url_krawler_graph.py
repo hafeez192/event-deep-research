@@ -1,3 +1,4 @@
+import random
 from typing import Literal, TypedDict
 
 from langchain_core.tools import tool
@@ -5,7 +6,10 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 from pydantic import BaseModel, Field
 from src.llm_service import model_for_big_queries, model_for_tools
-from src.url_crawler.prompts import EXTRACT_EVENTS_PROMPT, create_event_list_prompt
+from src.url_crawler.prompts import (
+    EXTRACT_EVENTS_PROMPT,
+    FINAL_EVENT_LIST_PROMPT,
+)
 from src.url_crawler.utils import (
     chunk_text_by_tokens,
     url_crawl,
@@ -13,6 +17,7 @@ from src.url_crawler.utils import (
 
 CHUNK_SIZE = 800
 OVERLAP_SIZE = 20
+MAX_CONTENT_LENGTH = 100000
 
 # CHUNK_SIZE = 40
 # OVERLAP_SIZE = 0
@@ -72,6 +77,11 @@ async def scrape_content(
     print(f"Scraping content for URL: {url}")
     content = await url_crawl(url)
 
+    if len(content) > MAX_CONTENT_LENGTH:
+        # At random start
+        start_index = random.randint(0, len(content) - MAX_CONTENT_LENGTH)
+        content = content[start_index : start_index + MAX_CONTENT_LENGTH]
+
     return Command(
         goto="divide_and_extract_chunks", update={"raw_scraped_content": content}
     )
@@ -95,7 +105,7 @@ async def divide_and_extract_chunks(
     # 3. Chunks are analyzed and simplified.
 
     categorized_chunks = []
-    for chunk in text_chunks:
+    for chunk in text_chunks[4:6]:
         prompt = EXTRACT_EVENTS_PROMPT.format(
             research_question=research_question, text_chunk=chunk
         )
@@ -149,42 +159,47 @@ async def divide_and_extract_chunks(
 
 async def create_event_list(state: UrlCrawlerState) -> Command[Literal["__end__"]]:
     categorized_chunks = state.get("categorized_chunks", [])
-    raw_content = ""
+    research_question = state.get("research_question", "")
+
+    relevant_texts = []
+    raw_content_rebuilt = ""
+
+    # 1. Consolidate Phase: Loop ONLY to gather data, NO LLM calls here
+    for chunk in categorized_chunks:
+        # Rebuild the full raw content for the final state
+        raw_content_rebuilt += chunk["original_chunk"]
+
+        # Collect only the content deemed useful by the previous step
+        # We check the category to be safe, or we could just check if chunk["content"] is not empty
+        if chunk["category"] in ["RelevantChunk", "PartialChunk"] and chunk["content"]:
+            relevant_texts.append(chunk["content"])
+
+    # Join all relevant pieces into one large document, separated by newlines
+    consolidated_context = "\n\n".join(relevant_texts)
+
     extracted_events = ""
-    for chunk_with_category in categorized_chunks:
-        event_summary = await create_event_list_from_chunks(
-            state, chunk_with_category["content"]
+
+    # 2. Summarize Phase: ONE single LLM call
+    if consolidated_context:
+        print("Generating final event list from consolidated content...")
+        prompt = FINAL_EVENT_LIST_PROMPT.format(
+            research_question=research_question,
+            consolidated_context=consolidated_context,
         )
-        extracted_events += event_summary
-        raw_content += chunk_with_category["original_chunk"]
+
+        # This is now the ONLY call to the model in this node
+        final_summary = await model_for_big_queries.ainvoke(prompt)
+        extracted_events = final_summary.content
+    else:
+        extracted_events = "No relevant events found matching the research question."
 
     return Command(
         goto=END,
         update={
             "extracted_events": extracted_events,
-            "raw_scraped_content": raw_content,
+            "raw_scraped_content": raw_content_rebuilt,
         },
     )
-
-
-async def create_event_list_from_chunks(
-    state: UrlCrawlerState, chunk_content: str
-) -> str:
-    """Chunks large text, extracts events in parallel, and consolidates them
-    with the previous summary.
-    """
-    research_question = state.get("research_question", "")
-
-    # 4. Consolidate new events with the previous summary
-    if chunk_content:
-        prompt = create_event_list_prompt.format(
-            research_question=research_question, newly_extracted_events=chunk_content
-        )
-
-        final_summary = await model_for_big_queries.ainvoke(prompt)
-        return final_summary.content
-
-    return ""
 
 
 builder = StateGraph(

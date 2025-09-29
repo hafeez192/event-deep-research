@@ -26,24 +26,24 @@ You must analyze the provided text chunk and classify it using one of the availa
 You must call exactly one of the provided tools. Do not respond with plain text.
 """
 
+# src/url_crawler/prompts.py
 
-create_event_list_prompt = """You are a biographical assistant. Your task is to convert blocks of text that contains events of a person into single events where the date, description of the event, location of the event are included for {research_question}.
+FINAL_EVENT_LIST_PROMPT = """
+You are a expert bibliographic researcher. 
+Your goal is to answer the following research question: 
+"{research_question}"
 
-**Instructions**:
-- Analyze the "New Extracted Events" and convert them into single events where the date, description of the event, location of the event are included.
-- **MAINTAIN** a chronological order.
+Below is a collection of text extracts taken from a website. These extracts have already been filtered and only contain information relevant to the life of the subject.
+
+Synthesize this information into a final, chronological list of bibliographic events that answer the research question. Do not include commentary, just the events.
 
 **Output Format**:
 - A single, comprehensive, and chronological list in bullet points.
 
-<Input>
-New Extracted Events:
-----
-{newly_extracted_events}
+<Relevant Extracts>
+{consolidated_context}
+</Relevant Extracts>
 
-</Input>
 
-<Output>
-Provide the single, consolidated, and chronological list of biographical events.
-</Output>
+Final Event List:
 """
