@@ -129,3 +129,4 @@ class SupervisorState(SupervisorStateInput):
     conversation_history: Annotated[list[MessageLikeRepresentation], override_reducer]
     conversation_summary: str
     iteration_count: int = 0
+    used_domains: list[str]

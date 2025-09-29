@@ -7,6 +7,7 @@ from src.llm_service import model_for_tools
 from src.prompts import lead_researcher_prompt
 from src.research_events.research_events_graph import research_events_app
 from src.state import (
+    CategoriesWithEvents,
     FinishResearchTool,
     ResearchEventsTool,
     SupervisorState,
@@ -23,7 +24,10 @@ async def supervisor_node(
     """The 'brain' of the agent. It decides the next action."""
     prompt = lead_researcher_prompt.format(
         person_to_research=state["person_to_research"],
-        existing_events=state.get("existing_events", []),
+        existing_events=state.get(
+            "existing_events",
+            CategoriesWithEvents(early="", personal="", career="", legacy=""),
+        ),
         messages_summary=state.get("conversation_summary", ""),
         max_iterations=5,
     )
@@ -56,6 +60,11 @@ async def supervisor_tools_node(
     state: SupervisorState,
 ) -> Command[Literal["supervisor", "__end__"]]:
     """The 'hands' of the agent. Executes tools and returns a Command for routing."""
+    existing_events = state.get(
+        "existing_events",
+        CategoriesWithEvents(early="", personal="", career="", legacy=""),
+    )
+    used_domains = state.get("used_domains", [])
     last_message = state["conversation_history"][-1]
     iteration_count = state.get("iteration_count", 0)
     exceeded_allowed_iterations = iteration_count >= MAX_TOOL_CALL_ITERATIONS
@@ -66,7 +75,6 @@ async def supervisor_tools_node(
 
     # This is the core logic for executing tools and updating state.
     all_tool_messages = []
-    existing_events = state.get("existing_events", [])
 
     for tool_call in last_message.tool_calls:
         tool_name = tool_call["name"]
@@ -89,10 +97,19 @@ async def supervisor_tools_node(
 
         elif tool_name == "ResearchEventsTool":
             research_question = tool_args["research_question"]
+            print("research_question", research_question)
+            print("existing_events", existing_events)
+            print("used_domains", used_domains)
             result = await research_events_app.ainvoke(
-                research_question=research_question, existing_events=existing_events
+                {
+                    "research_question": research_question,
+                    "existing_events": existing_events,
+                    "used_domains": used_domains,
+                }
             )
-            combined_events = result["combined_events"]
+            existing_events = result["existing_events"]
+            new_used_domains = result["used_domains"]
+            used_domains.extend(new_used_domains)
             # structured_llm = model_for_structured.with_structured_output(
             #     CategoriesWithEvents
             # )
@@ -114,8 +131,7 @@ async def supervisor_tools_node(
             #         legacy="- Miller was nominated for the Nobel Prize in Literature by University of Copenhagen professor Allan Philip in 1973.\n- Miller participated in the filming of Reds in the late 1970s.\n- Miller held an ongoing correspondence of over 1,500 letters with Brenda Venus between 1978 and 1981.\n- Miller died on June 7, 1980 at his home in Pacific Palisades, Los Angeles, aged 88.\n- The Henry Miller Memorial Library was founded in Big Sur in 1981 by Emil White.",
             #     ),
             # )
-            combined_events = result
-            existing_events = combined_events
+            existing_events = existing_events
             all_tool_messages.append(
                 ToolMessage(
                     content=str(result), tool_call_id=tool_call["id"], name=tool_name
@@ -130,6 +146,7 @@ async def supervisor_tools_node(
             "existing_events": existing_events,
             "conversation_history": all_tool_messages,
             "conversation_summary": conversation_summary,
+            "used_domains": used_domains,
         },
     )
 

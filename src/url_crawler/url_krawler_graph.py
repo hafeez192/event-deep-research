@@ -95,7 +95,7 @@ async def divide_and_extract_chunks(
     # 3. Chunks are analyzed and simplified.
 
     categorized_chunks = []
-    for chunk in text_chunks[0:1]:
+    for chunk in text_chunks:
         prompt = EXTRACT_EVENTS_PROMPT.format(
             research_question=research_question, text_chunk=chunk
         )
