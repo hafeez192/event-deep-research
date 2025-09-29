@@ -40,15 +40,6 @@ def url_finder(
     print("used_domains", used_domains)
 
     # Uncomment to finisht he graph fast for testing
-    # return Command(
-    #     goto=END,
-    #     update={
-    #         "existing_events": CategoriesWithEvents(
-    #             early="test", personal="test", career="test", legacy="test"
-    #         ),
-    #         "used_domains": ["en.wikipedia.org", "www.britannica.com"],
-    #     },
-    # )
 
     tool = TavilySearch(
         max_results=2,
@@ -64,6 +55,16 @@ def url_finder(
     result = tool.invoke({"query": research_question})
 
     urls = [result["url"] for result in result["results"]]
+
+    # return Command(
+    #     goto=END,
+    #     update={
+    #         "existing_events": CategoriesWithEvents(
+    #             early="test", personal="test", career="test", legacy="test"
+    #         ),
+    #         "used_domains": ["en.wikipedia.org", "www.britannica.com"],
+    #     },
+    # )
 
     ### call to tavily/duck duck go
     # urls = model.invoke(research_question)
