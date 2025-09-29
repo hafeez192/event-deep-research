@@ -4,6 +4,8 @@ from urllib.parse import urlparse
 from langchain_tavily import TavilySearch
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
+from pydantic import BaseModel, Field
+from src.llm_service import model_for_structured
 from src.research_events.merge_events.merge_events_graph import merge_events_app
 from src.state import CategoriesWithEvents
 from src.url_crawler.url_krawler_graph import url_crawler_app
@@ -26,35 +28,56 @@ class OutputResearchEventsState(TypedDict):
     used_domains: list[str]
 
 
+class BestUrls(BaseModel):
+    selected_urls: list[str] = Field(description="A list of the two best URLs.")
+
+
 def url_finder(
     state: ResearchEventsState,
 ) -> Command[Literal["should_process_url_router"]]:
     """Find the urls for the research_question"""
-    print("state", state)
     research_question = state.get("research_question", "")
     used_domains = state.get("used_domains", [])
 
     if not research_question:
         raise ValueError("research_question is required")
 
-    print("used_domains", used_domains)
-
     # Uncomment to finisht he graph fast for testing
 
     tool = TavilySearch(
-        max_results=2,
+        max_results=6,
         topic="general",
-        include_answer=False,
         include_raw_content=False,
-        include_images=False,
-        include_image_descriptions=False,
-        include_domains=None,
+        include_answer=False,
         exclude_domains=used_domains,
     )
 
     result = tool.invoke({"query": research_question})
 
     urls = [result["url"] for result in result["results"]]
+
+    prompt = """
+        From the results below, select the two URLs that will provide the most bibliographical events 
+        (key life events, publications, historical records, detailed timelines) about 
+        the subject's life in relation to the research question.
+
+        <Results>
+        {results}
+        </Results>
+
+        <Research Question>
+        {research_question}
+        </Research Question>
+
+    """
+
+    prompt = prompt.format(results=urls, research_question=research_question)
+
+    structured_llm = model_for_structured.with_structured_output(BestUrls)
+
+    structured_result = structured_llm.invoke(prompt)
+
+    return Command(goto=END, update={"urls": structured_result.selected_urls})
 
     # return Command(
     #     goto=END,
@@ -72,8 +95,6 @@ def url_finder(
     #     "https://en.wikipedia.org/wiki/Henry_Miller",
     #     "https://www.britannica.com/biography/Henry-Miller",
     # ]
-
-    return Command(goto="should_process_url_router", update={"urls": urls})
 
 
 def updateUrlList(
@@ -187,5 +208,10 @@ research_events_builder.add_node("merge_events_and_update", merge_events_and_upd
 # Set the entry point
 research_events_builder.add_edge(START, "url_finder")
 
+from langfuse.langchain import CallbackHandler
 
-research_events_app = research_events_builder.compile()
+langfuse_handler = CallbackHandler()
+
+research_events_app = research_events_builder.compile().with_config(
+    {"callbacks": [langfuse_handler]}
+)
