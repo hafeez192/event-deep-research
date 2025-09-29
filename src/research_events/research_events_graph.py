@@ -77,8 +77,6 @@ def url_finder(
 
     structured_result = structured_llm.invoke(prompt)
 
-    return Command(goto=END, update={"urls": structured_result.selected_urls})
-
     # return Command(
     #     goto=END,
     #     update={
@@ -95,6 +93,11 @@ def url_finder(
     #     "https://en.wikipedia.org/wiki/Henry_Miller",
     #     "https://www.britannica.com/biography/Henry-Miller",
     # ]
+
+    return Command(
+        goto="should_process_url_router",
+        update={"urls": structured_result.selected_urls},
+    )
 
 
 def updateUrlList(
