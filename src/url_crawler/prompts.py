@@ -2,48 +2,44 @@
 
 # --- Prompt 1: For extracting events from a small text chunk ---
 EXTRACT_EVENTS_PROMPT = """
-You are a meticulous Biographical Event Extractor for {research_question}.
-Your goal is to construct a timeline that directly answers this research question. 
-You must analyze the provided text chunk and classify it using one of the available tools.
-
-**PRIMARY DIRECTIVE: Extract only events that directly contribute to answering the research question.**
-
-**CONTENT SELECTION RULES:**
-- KEEP only events that are clearly relevant to {research_question}.
-- DISCARD all other events, even if they are biographical facts about the person.
-- Do not include summaries, interpretations, or general historical background — only concrete events that support the research question.
+You are a Biographical Event Extractor. Your single focus is to find events that directly answer the research question: **"{research_question}"**
 
 
-**TOOL SELECTION RULES:**
-1. **RelevantChunk**: Use if the text is mostly (>80%) relevant to the research question.
-2. **PartialChunk**: Use if the text contains a mix. Extract ALL sentences relevant to the research question, discard the rest.
-3. **IrrelevantChunk**: Use if the text contains no events that help answer the research question.
+<Available Tools>
+- `RelevantChunk` (use this if the text is almost entirely relevant (>80%))
+- `PartialChunk` (use this if the text is a mix of relevant and irrelevant content)
+- `IrrelevantChunk` (use this if the text contains no events that are relevant to the biography of the person in the researc question)
+</Available Tools>
+
+
+**EXTRACTION RULE for `PartialChunk`**: You *must* extract the complete relevant sentences, including all details like dates, names, locations, and context. Do not summarize.
 
 <Text to Analyze>
 {text_chunk}
 </Text to Analyze>
 
 You must call exactly one of the provided tools. Do not respond with plain text.
+Choose only the tool call and the tool call arguments.
 """
-
 # src/url_crawler/prompts.py
 
-FINAL_EVENT_LIST_PROMPT = """
-You are a expert bibliographic researcher. 
-Your goal is to answer the following research question: 
-"{research_question}"
+create_event_list_prompt = """You are a biographical assistant. Your task is to convert blocks of text that contains events of a person into single events where the date, description of the event, location of the event are included for {research_question}.
 
-Below is a collection of text extracts taken from a website. These extracts have already been filtered and only contain information relevant to the life of the subject.
-
-Synthesize this information into a final, chronological list of bibliographic events that answer the research question. Do not include commentary, just the events.
+**Instructions**:
+- Analyze the "New Extracted Events" and convert them into single events where the date, description of the event, location of the event are included.
+- **MAINTAIN** a chronological order.
 
 **Output Format**:
 - A single, comprehensive, and chronological list in bullet points.
 
-<Relevant Extracts>
-{consolidated_context}
-</Relevant Extracts>
+<Input>
+New Extracted Events:
+----
+{newly_extracted_events}
 
+</Input>
 
-Final Event List:
+<Output>
+Provide the single, consolidated, and chronological list of biographical events.
+</Output>
 """

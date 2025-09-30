@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from src.llm_service import model_for_big_queries, model_for_tools
 from src.url_crawler.prompts import (
     EXTRACT_EVENTS_PROMPT,
-    FINAL_EVENT_LIST_PROMPT,
+    create_event_list_prompt,
 )
 from src.url_crawler.utils import (
     chunk_text_by_tokens,
@@ -24,26 +24,24 @@ MAX_CONTENT_LENGTH = 100000
 
 
 class RelevantChunk(BaseModel):
-    """Use this when the VAST MAJORITY (e.g., >80%) of the chunk describes significant
-    personal life events of the historical figure. The entire chunk can be kept.
+    """The VAST MAJORITY (>80%) of the chunk consists of events directly relevant
+    to the research question.
     """
 
 
 class PartialChunk(BaseModel):
-    """Use this when the chunk is a MIX of personal life events and irrelevant details
-    (like plot summaries of their work, literary criticism, or general historical context).
-    You will need to extract ONLY the parts about their life.
+    """The chunk is a MIX of relevant and irrelevant content. Use this even for a
+    single sentence that may refer to a biographical event.
     """
 
     relevant_content: str = Field(
-        description="An extraction of ALL sentences or phrases describing personal life events. Combine them into a coherent paragraph. Omit all work-related content."
+        description="An extraction of ALL sentences relevant to the research question. "
+        "Must include full details (dates, names, context) from the original text."
     )
 
 
 class IrrelevantChunk(BaseModel):
-    """Use this when the chunk is ENTIRELY about the person's works, literary analysis,
-    references to them after their death, or trivial details with no biographical importance.
-    """
+    """The chunk contains ABSOLUTELY NO information that are relevant to the biography of the person in the research question."""
 
 
 class InputUrlCrawlerState(TypedDict):
@@ -105,7 +103,7 @@ async def divide_and_extract_chunks(
     # 3. Chunks are analyzed and simplified.
 
     categorized_chunks = []
-    for chunk in text_chunks[4:6]:
+    for chunk in text_chunks:
         prompt = EXTRACT_EVENTS_PROMPT.format(
             research_question=research_question, text_chunk=chunk
         )
@@ -159,47 +157,41 @@ async def divide_and_extract_chunks(
 
 async def create_event_list(state: UrlCrawlerState) -> Command[Literal["__end__"]]:
     categorized_chunks = state.get("categorized_chunks", [])
-    research_question = state.get("research_question", "")
-
-    relevant_texts = []
-    raw_content_rebuilt = ""
-
-    # 1. Consolidate Phase: Loop ONLY to gather data, NO LLM calls here
-    for chunk in categorized_chunks:
-        # Rebuild the full raw content for the final state
-        raw_content_rebuilt += chunk["original_chunk"]
-
-        # Collect only the content deemed useful by the previous step
-        # We check the category to be safe, or we could just check if chunk["content"] is not empty
-        if chunk["category"] in ["RelevantChunk", "PartialChunk"] and chunk["content"]:
-            relevant_texts.append(chunk["content"])
-
-    # Join all relevant pieces into one large document, separated by newlines
-    consolidated_context = "\n\n".join(relevant_texts)
-
+    raw_content = ""
     extracted_events = ""
-
-    # 2. Summarize Phase: ONE single LLM call
-    if consolidated_context:
-        print("Generating final event list from consolidated content...")
-        prompt = FINAL_EVENT_LIST_PROMPT.format(
-            research_question=research_question,
-            consolidated_context=consolidated_context,
+    for chunk_with_category in categorized_chunks:
+        event_summary = await create_event_list_from_chunks(
+            state, chunk_with_category["content"]
         )
-
-        # This is now the ONLY call to the model in this node
-        final_summary = await model_for_big_queries.ainvoke(prompt)
-        extracted_events = final_summary.content
-    else:
-        extracted_events = "No relevant events found matching the research question."
+        extracted_events += event_summary
+        raw_content += chunk_with_category["original_chunk"]
 
     return Command(
         goto=END,
         update={
             "extracted_events": extracted_events,
-            "raw_scraped_content": raw_content_rebuilt,
+            "raw_scraped_content": raw_content,
         },
     )
+
+
+async def create_event_list_from_chunks(
+    state: UrlCrawlerState, chunk_content: str
+) -> str:
+    """Chunks large text, extracts events in parallel, and consolidates them
+    with the previous summary.
+    """
+    research_question = state.get("research_question", "")
+    # 4. Consolidate new events with the previous summary
+    if chunk_content:
+        prompt = create_event_list_prompt.format(
+            research_question=research_question, newly_extracted_events=chunk_content
+        )
+
+        final_summary = await model_for_big_queries.ainvoke(prompt)
+        return final_summary.content
+
+    return ""
 
 
 builder = StateGraph(
@@ -212,4 +204,8 @@ builder.add_node("create_event_list", create_event_list)
 # builder.add_node("return_events", return_events)
 builder.add_edge(START, "scrape_content")
 
-url_crawler_app = builder.compile()
+from langfuse.langchain import CallbackHandler
+
+langfuse_handler = CallbackHandler()
+
+url_crawler_app = builder.compile().with_config({"callbacks": [langfuse_handler]})

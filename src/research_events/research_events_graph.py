@@ -150,6 +150,10 @@ async def crawl_url(
     """Crawls the next URL and updates the temporary state with new events."""
     urls = state["urls"]
     url_to_process = urls[0]  # Always process the first one
+    research_question = state.get("research_question", "")
+
+    if not research_question:
+        raise ValueError("research_question is required for url crawling")
 
     # return Command(
     #     goto="merge_events_and_update",
@@ -157,7 +161,9 @@ async def crawl_url(
     # )
 
     # Invoke the crawler subgraph
-    result = await url_crawler_app.ainvoke({"url": url_to_process})
+    result = await url_crawler_app.ainvoke(
+        {"url": url_to_process, "research_question": research_question}
+    )
     events_from_url = result["extracted_events"]
 
     # Go to the merge node, updating the state with the extracted events
