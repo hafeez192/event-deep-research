@@ -16,7 +16,7 @@ class InputMergeEventsState(TypedDict):
     """The complete state for the event merging sub-graph."""
 
     existing_events: CategoriesWithEvents
-    raw_extracted_events: str
+    extracted_events: str
 
 
 class MergeEventsState(InputMergeEventsState):
@@ -32,11 +32,14 @@ class OutputMergeEventsState(TypedDict):
 async def split_events(
     state: MergeEventsState,
 ) -> Command[Literal["categorize_chunk"]]:
-    raw = state.get("raw_extracted_events", "")
+    extracted_events = state.get("extracted_events", "")
 
     # simple chunker by characters, but you could split by sentences/events
     max_len = 2000
-    chunks = [raw[i : i + max_len] for i in range(0, len(raw), max_len)]
+    chunks = [
+        extracted_events[i : i + max_len]
+        for i in range(0, len(extracted_events), max_len)
+    ]
 
     return Command(
         goto="categorize_chunk",

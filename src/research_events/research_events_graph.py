@@ -20,7 +20,7 @@ class InputResearchEventsState(TypedDict):
 class ResearchEventsState(InputResearchEventsState):
     urls: list[str]
     # Add this temporary field
-    raw_extracted_events: str
+    extracted_events: str
 
 
 class OutputResearchEventsState(TypedDict):
@@ -155,19 +155,18 @@ async def crawl_url(
 
     # return Command(
     #     goto="merge_events_and_update",
-    #     update={"raw_extracted_events": "raw_extracted_events mock"},
+    #     update={"extracted_events": "extracted_events mock"},
     # )
 
     # Invoke the crawler subgraph
     result = await url_crawler_app.ainvoke(
         {"url": url_to_process, "research_question": research_question}
     )
-    events_from_url = result["extracted_events"]
-
+    extracted_events = result["extracted_events"]
     # Go to the merge node, updating the state with the extracted events
     return Command(
         goto="merge_events_and_update",
-        update={"raw_extracted_events": events_from_url},
+        update={"extracted_events": extracted_events},
     )
 
 
@@ -176,13 +175,13 @@ async def merge_events_and_update(
 ) -> Command[Literal["should_process_url_router"]]:
     """Merges new events, removes the processed URL, and loops back to the router."""
     existing_events = state.get("existing_events", CategoriesWithEvents())
-    new_events = state.get("raw_extracted_events", "")
+    extracted_events = state.get("extracted_events", "")
 
     # Invoke the merge subgraph
     result = await merge_events_app.ainvoke(
         {
             "existing_events": existing_events,
-            "raw_extracted_events": new_events,
+            "extracted_events": extracted_events,
         }
     )
 
@@ -195,7 +194,7 @@ async def merge_events_and_update(
             "existing_events": result["existing_events"],
             "urls": remaining_urls,
             "used_domains": used_domains,
-            "raw_extracted_events": "",  # Clear the temporary state
+            # "extracted_events": "",  # Clear the temporary state
         },
     )
 

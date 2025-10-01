@@ -100,7 +100,7 @@ async def chunk_content(
     # Initialize the categorized_chunks list as empty
     return Command(
         goto="categorize_chunk",
-        update={"text_chunks": text_chunks, "categorized_chunks": []},
+        update={"text_chunks": text_chunks[:2], "categorized_chunks": []},
     )
 
 
