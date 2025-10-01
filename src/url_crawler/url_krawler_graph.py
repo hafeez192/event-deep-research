@@ -72,7 +72,6 @@ async def scrape_content(
 ) -> Command[Literal["divide_and_extract_chunks"]]:
     url = state.get("url", "")
 
-    print(f"Scraping content for URL: {url}")
     content = await url_crawl(url)
 
     if len(content) > MAX_CONTENT_LENGTH:
@@ -113,7 +112,9 @@ async def divide_and_extract_chunks(
         if response.tool_calls:
             tool_call_name = response.tool_calls[0]["name"]
         else:
-            categorized_chunks.append({"content": chunk, "category": "UNKNOWN"})
+            categorized_chunks.append(
+                {"content": chunk, "category": "UNKNOWN", "original_chunk": chunk}
+            )
             continue
 
         tool_call_args = response.tool_calls[0]["args"]

@@ -4,6 +4,10 @@ from langgraph.graph import START, StateGraph
 from langgraph.graph.state import Command
 from langgraph.pregel.main import asyncio
 from src.llm_service import model_for_structured
+from src.research_events.merge_events.prompts import (
+    MERGE_EVENTS_TEMPLATE,
+    categorize_events_prompt,
+)
 from src.research_events.merge_events.utils import ensure_categories_with_events
 from src.state import CategoriesWithEvents
 
@@ -17,72 +21,90 @@ class InputMergeEventsState(TypedDict):
 
 class MergeEventsState(InputMergeEventsState):
     extracted_events_categorized: CategoriesWithEvents
+    chunked_events: list[str]  # for split chunks
+    chunked_events_categorized: list[CategoriesWithEvents]  # for results per chunk
 
 
 class OutputMergeEventsState(TypedDict):
     existing_events: CategoriesWithEvents  # includes the existing events + the events from the new events
 
 
-async def categorize_events(
+async def split_events(
     state: MergeEventsState,
-) -> Command[Literal["combine_new_and_original_events"]]:
-    raw_extracted_events = state.get("raw_extracted_events", "")
-    print("raw_extracted_events", raw_extracted_events)
-    categorize_events_prompt = """
-    You are a helpful assistant that will categorize the events into the 4 categories.
+) -> Command[Literal["categorize_chunk"]]:
+    raw = state.get("raw_extracted_events", "")
 
-    <Events>
-    {events}
-    </Events>
-    
-    <Categories>
-    early: Covers childhood, upbringing, family, education, and early influences that shaped the author.
-    personal: Focuses on relationships, friendships, family life, places of residence, and notable personal traits or beliefs.
-    career: Details their professional journey: first steps into writing, major publications, collaborations, recurring themes, style, and significant milestones.
-    legacy: Explains how their work was received, awards or recognition, cultural/literary impact, influence on other authors, and how they are remembered today.
-    </Categories>
+    # simple chunker by characters, but you could split by sentences/events
+    max_len = 2000
+    chunks = [raw[i : i + max_len] for i in range(0, len(raw), max_len)]
 
-
-    <Rules>
-    INCLUDE ALL THE INFORMATION FROM THE EVENTS, do not abbreviate or omit any information.
-    </Rules>
-    """
-    categorize_events_prompt = categorize_events_prompt.format(
-        events=raw_extracted_events
+    return Command(
+        goto="categorize_chunk",
+        update={"chunked_events": chunks, "chunked_events_categorized": []},
     )
+
+
+async def categorize_chunk(
+    state: MergeEventsState,
+) -> Command[Literal["categorize_chunk", "merge_categorizations"]]:
+    chunks = state.get("chunked_events", [])
+    done = state.get("chunked_events_categorized", [])
+
+    if len(done) >= len(chunks):
+        # all chunks done → move to merge
+        return Command(goto="merge_categorizations")
+
+    # take next chunk
+    next_chunk = chunks[len(done)]
+    prompt = categorize_events_prompt.format(events=next_chunk)
 
     structured_llm = model_for_structured.with_structured_output(CategoriesWithEvents)
+    response = await structured_llm.ainvoke(prompt)
 
-    response = await structured_llm.ainvoke(categorize_events_prompt)
     return Command(
-        goto="combine_new_and_original_events",
-        update={"extracted_events_categorized": response},
+        goto="categorize_chunk",  # loop until all chunks processed
+        update={"chunked_events_categorized": done + [response]},
     )
 
 
-MERGE_EVENTS_TEMPLATE = """You are a helpful assistant that will merge two lists of events: 
-the original events (which must always remain) and new events (which may contain extra details). 
-The new events should only be treated as additions if they provide relevant new information. 
-The final output must preserve the original events and seamlessly add the new ones if applicable.
+async def merge_categorizations(
+    state: MergeEventsState,
+) -> Command[Literal["combine_new_and_original_events"]]:
+    results = state.get("chunked_events_categorized", [])
 
-<Rules>
-- Always include the original events exactly, do not omit or alter them.
-- Add new events only if they are not duplicates, combining details if they overlap.
-- Format the final list as bullet points, one event per line (e.g., "- Event details.").
-- Keep the list clean, concise, and without commentary.
-</Rules>
+    merged: CategoriesWithEvents = CategoriesWithEvents(
+        early="[]",
+        personal="[]",
+        career="[]",
+        legacy="[]",
+    )
 
-<Events>
-Original events:
-{original}
+    for r in results:
+        merged.early += r.early
+        merged.personal += r.personal
+        merged.career += r.career
+        merged.legacy += r.legacy
 
-New events:
-{new}
-</Events>
+    return Command(
+        goto="combine_new_and_original_events",
+        update={"extracted_events_categorized": merged},
+    )
 
-<Output>
-Return only the merged list of events as bullet points, nothing else.
-</Output>"""
+
+# async def categorize_events(
+#     state: MergeEventsState,
+# ) -> Command[Literal["combine_new_and_original_events"]]:
+#     raw_extracted_events = state.get("raw_extracted_events", "")
+
+#     prompt = categorize_events_prompt.format(events=raw_extracted_events)
+
+#     structured_llm = model_for_structured.with_structured_output(CategoriesWithEvents)
+
+#     response = await structured_llm.ainvoke(prompt)
+#     return Command(
+#         goto="combine_new_and_original_events",
+#         update={"extracted_events_categorized": response},
+#     )
 
 
 async def combine_new_and_original_events(state: MergeEventsState) -> Command:
@@ -148,10 +170,19 @@ merge_events_graph_builder = StateGraph(
     input_schema=InputMergeEventsState,
 )
 
-merge_events_graph_builder.add_node("categorize_events", categorize_events)
 merge_events_graph_builder.add_node(
     "combine_new_and_original_events", combine_new_and_original_events
 )
-merge_events_graph_builder.add_edge(START, "categorize_events")
+merge_events_graph_builder.add_node("split_events", split_events)
+merge_events_graph_builder.add_node("categorize_chunk", categorize_chunk)
+merge_events_graph_builder.add_node("merge_categorizations", merge_categorizations)
 
-merge_events_app = merge_events_graph_builder.compile()
+merge_events_graph_builder.add_edge(START, "split_events")
+
+from langfuse.langchain import CallbackHandler
+
+langfuse_handler = CallbackHandler()
+
+merge_events_app = merge_events_graph_builder.compile().with_config(
+    {"callbacks": [langfuse_handler]}
+)

@@ -19,10 +19,10 @@ from src.utils import create_messages_summary, think_tool
 langfuse = get_client()
 
 # Verify connection
-if langfuse.auth_check():
-    print("Langfuse client is authenticated and ready!")
-else:
-    print("Authentication failed. Please check your credentials and host.")
+# if langfuse.auth_check():
+#     print("Langfuse client is authenticated and ready!")
+# else:
+#     print("Authentication failed. Please check your credentials and host.")
 
 
 MAX_TOOL_CALL_ITERATIONS = 7
@@ -118,8 +118,7 @@ async def supervisor_tools_node(
                 }
             )
             existing_events = result["existing_events"]
-            new_used_domains = result["used_domains"]
-            used_domains.extend(new_used_domains)
+            used_domains = result["used_domains"]
             # structured_llm = model_for_structured.with_structured_output(
             #     CategoriesWithEvents
             # )

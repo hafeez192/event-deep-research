@@ -42,8 +42,6 @@ def url_finder(
     if not research_question:
         raise ValueError("research_question is required")
 
-    # Uncomment to finisht he graph fast for testing
-
     tool = TavilySearch(
         max_results=6,
         topic="general",

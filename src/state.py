@@ -119,14 +119,23 @@ class SupervisorStateInput(TypedDict):
     """The initial input to start the main research graph."""
 
     person_to_research: str
+    existing_events: CategoriesWithEvents = Field(
+        default=CategoriesWithEvents(early="", personal="", career="", legacy=""),
+        description="Covers chronology events of the person to research.",
+    )
+    used_domains: list[str] = Field(
+        default=[],
+        description="The domains that have been used to extract events.",
+    )
+    conversation_summary: str = Field(
+        default="",
+        description="A summary of the conversation history.",
+    )
 
 
 class SupervisorState(SupervisorStateInput):
     """The complete state for the main supervisor graph."""
 
-    existing_events: CategoriesWithEvents
     final_events: List[ChronologyEvent]
     conversation_history: Annotated[list[MessageLikeRepresentation], override_reducer]
-    conversation_summary: str
     iteration_count: int = 0
-    used_domains: list[str]
