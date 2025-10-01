@@ -2,50 +2,32 @@
 
 <a id="readme-top"></a>
 
-<!--
-*** Thanks for checking out the Best-README-Template. If you have a suggestion
-*** that would make this better, please fork the repo and create a pull request
-*** or simply open an issue with the tag "enhancement".
-*** Don't forget to give the project a star!
-*** Thanks again! Now go create something AMAZING! :D
--->
-
 <!-- PROJECT SHIELDS -->
-<!--
-*** I'm using markdown "reference style" links for readability.
-*** Reference links are enclosed in brackets [ ] instead of parentheses ( ).
-*** See the bottom of this document for the declaration of the reference variables
-*** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
-*** https://www.markdownguide.org/basic-syntax/#reference-style-links
--->
 
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
-[![Unlicense License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
+[![MIT License][license-shield]][license-url]
 
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/othneildrew/Best-README-Template">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
+  <a href="https://github.com/bernatsampera/deep-event-research">
+    <img src="https://img.icons8.com/color/96/000000/robot-2.png" alt="Logo" width="80" height="80">
   </a>
 
-  <h3 align="center">Best-README-Template</h3>
+  <h3 align="center">Deep Event Research</h3>
 
   <p align="center">
-    An awesome README template to jumpstart your projects!
+    AI-powered biographical research agent that discovers and compiles life events of historical figures
     <br />
-    <a href="https://github.com/othneildrew/Best-README-Template"><strong>Explore the docs »</strong></a>
+    <a href="https://github.com/bernatsampera/deep-event-research"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/othneildrew/Best-README-Template">View Demo</a>
+    <a href="https://github.com/bernatsampera/deep-event-research/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
     &middot;
-    <a href="https://github.com/othneildrew/Best-README-Template/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
-    &middot;
-    <a href="https://github.com/othneildrew/Best-README-Template/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
+    <a href="https://github.com/bernatsampera/deep-event-research/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
   </p>
 </div>
 
@@ -64,9 +46,11 @@
       <ul>
         <li><a href="#prerequisites">Prerequisites</a></li>
         <li><a href="#installation">Installation</a></li>
+        <li><a href="#configuration">Configuration</a></li>
       </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
+    <li><a href="#architecture">Architecture</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
@@ -79,67 +63,99 @@
 
 ## About The Project
 
-[![Product Name Screen Shot][product-screenshot]](https://example.com)
+Deep Event Research is an intelligent AI agent that automatically discovers, extracts, and compiles biographical events of historical figures. Built with LangGraph, it uses advanced context engineering techniques and a supervisor pattern to orchestrate multiple research agents that work together to create comprehensive life timelines.
 
-There are many great README templates available on GitHub; however, I didn't find one that really suited my needs so I created this enhanced one. I want to create a README template so amazing that it'll be the last one you ever need -- I think this is it.
+Here's why this project is unique:
 
-Here's why:
+- **🤖 Multi-Agent Architecture**: Uses LangGraph's supervisor pattern to coordinate specialized research agents
+- **🔍 Intelligent Source Selection**: Automatically finds and evaluates the best biographical sources using Tavily search
+- **📚 Smart Event Categorization**: Organizes events into meaningful categories (early life, personal, career, legacy)
+- **🔄 Event Merging & Deduplication**: Intelligently combines information from multiple sources while avoiding duplicates
+- **📊 Full Observability**: Integrated with Langfuse for complete research process tracking
+- **⚡ Context Engineering**: Advanced prompt engineering techniques for accurate event extraction
 
-- Your time should be focused on creating something amazing. A project that solves a problem and helps others
-- You shouldn't be doing the same tasks over and over like creating a README from scratch
-- You should implement DRY principles to the rest of your life :smile:
-
-Of course, no one template will serve all projects since your needs may be different. So I'll be adding more in the near future. You may also suggest changes by forking this repo and creating a pull request or opening an issue. Thanks to all the people have contributed to expanding this template!
-
-Use the `BLANK_README.md` to get started.
+Perfect for researchers, historians, students, and anyone interested in exploring the lives of historical figures through AI-powered research.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ### Built With
 
-This section should list any major frameworks/libraries used to bootstrap your project. Leave any add-ons/plugins for the acknowledgements section. Here are a few examples.
+This project leverages cutting-edge AI and web technologies:
 
-- [![Langchain][langchain.com]][langchain-url]
+- [![LangGraph][langgraph.com]][langgraph-url] - Multi-agent orchestration and workflow management
+- [![LangChain][langchain.com]][langchain-url] - LLM integration and tooling
+- [![Firecrawl][firecrawl.com]][firecrawl-url] - Advanced web scraping and content extraction
+- [![Tavily][tavily.com]][tavily-url] - Intelligent web search and source discovery
+- [![Langfuse][langfuse.com]][langfuse-url] - LLM observability and monitoring
+- [![Ollama][ollama.com]][ollama-url] - Local LLM inference
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- GETTING STARTED -->
 
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
-
 ### Prerequisites
 
-This is an example of how to list things you need to use the software and how to install them.
+Before you begin, ensure you have the following installed:
 
-- npm
-  ```sh
-  npm install npm@latest -g
+- **Python 3.12+**
+- **uv** (Python package manager)
+- **Ollama** (for local LLM inference)
+
+  ```bash
+  # Install Ollama
+  curl -fsSL https://ollama.ai/install.sh | sh
+
+  # Pull a model (e.g., Llama 3.1)
+  ollama pull llama3.1
   ```
 
 ### Installation
 
-_Below is an example of how you can instruct your audience on installing and setting up your app. This template doesn't rely on any external dependencies or services._
+1. **Clone the repository**
 
-1. Get a free API Key at [https://example.com](https://example.com)
-2. Clone the repo
-   ```sh
-   git clone https://github.com/github_username/repo_name.git
+   ```bash
+   git clone https://github.com/bernatsampera/deep-event-research.git
+   cd deep-event-research
    ```
-3. Install NPM packages
-   ```sh
-   npm install
+
+2. **Install dependencies**
+
+   ```bash
+   uv sync
    ```
-4. Enter your API in `config.js`
-   ```js
-   const API_KEY = "ENTER YOUR API";
+
+3. **Set up environment variables**
+   Create a `.env` file in the root directory:
+
+   ```bash
+   # Required API Keys
+   FIRECRAWL_API_KEY=your_firecrawl_api_key
+   TAVILY_API_KEY=your_tavily_api_key
+
+   # Optional: Langfuse for observability
+   LANGFUSE_PUBLIC_KEY=your_langfuse_public_key
+   LANGFUSE_SECRET_KEY=your_langfuse_secret_key
+   LANGFUSE_HOST=https://cloud.langfuse.com
+
+   # LLM Configuration
+   OPENAI_API_KEY=your_openai_api_key  # Optional: for OpenAI models
+   GOOGLE_API_KEY=your_google_api_key  # Optional: for Google models
    ```
-5. Change git remote url to avoid accidental pushes to base project
-   ```sh
-   git remote set-url origin github_username/repo_name
-   git remote -v # confirm the changes
+
+4. **Start LangGraph Studio**
+   ```bash
+   make dev
    ```
+
+### Configuration
+
+The project uses several configuration files:
+
+- **`langgraph.json`**: Defines the available graphs and their entry points
+- **`.env`**: Contains API keys and configuration variables
+- **`pyproject.toml`**: Project dependencies and metadata
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -147,9 +163,101 @@ _Below is an example of how you can instruct your audience on installing and set
 
 ## Usage
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+### Running the Research Agent
 
-_For more examples, please refer to the [Documentation](https://example.com)_
+1. **Start LangGraph Studio**
+
+   ```bash
+   make dev
+   ```
+
+2. **Access the Studio Interface**
+   Open your browser to `http://localhost:8123`
+
+3. **Run the Supervisor Graph**
+
+   - Select the `supervisor` graph
+   - Input your research query:
+
+   ```json
+   {
+     "person_to_research": "Albert Einstein"
+   }
+   ```
+
+4. **Monitor the Research Process**
+   The agent will automatically:
+   - Search for biographical sources
+   - Extract relevant events
+   - Categorize events by life periods
+   - Merge and deduplicate information
+   - Provide a comprehensive timeline
+
+### Example Research Output
+
+```json
+{
+  "existing_events": {
+    "early": "Albert Einstein was born on March 14, 1879, in Ulm, Germany...",
+    "personal": "Einstein married Mileva Marić in 1903, and they had three children...",
+    "career": "In 1905, Einstein published four groundbreaking papers...",
+    "legacy": "Einstein's work revolutionized physics and our understanding of the universe..."
+  },
+  "used_domains": [
+    "en.wikipedia.org",
+    "www.britannica.com",
+    "www.nobelprize.org"
+  ]
+}
+```
+
+### Available Graphs
+
+The project includes several specialized graphs:
+
+- **`supervisor`**: Main orchestration graph that coordinates the research process
+- **`research_events`**: Handles source discovery and event extraction
+- **`merge_events_graph`**: Merges and deduplicates events from multiple sources
+- **`url_crawler`**: Extracts content from web pages
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- ARCHITECTURE -->
+
+## Architecture
+
+Deep Event Research uses a sophisticated multi-agent architecture built on LangGraph:
+
+### Core Components
+
+1. **Supervisor Agent**: The main orchestrator that decides research strategy
+2. **Research Events Agent**: Handles source discovery and event extraction
+3. **URL Crawler Agent**: Extracts content from web pages
+4. **Merge Events Agent**: Combines and deduplicates information
+
+### Research Flow
+
+```mermaid
+graph TD
+    A[Research Query] --> B[Supervisor Agent]
+    B --> C[Find Sources]
+    C --> D[Select Best URLs]
+    D --> E[Crawl Content]
+    E --> F[Extract Events]
+    F --> G[Merge & Deduplicate]
+    G --> H[Update Timeline]
+    H --> I{More Research Needed?}
+    I -->|Yes| B
+    I -->|No| J[Final Timeline]
+```
+
+### Key Features
+
+- **Context Engineering**: Advanced prompt engineering for accurate event extraction
+- **Supervisor Pattern**: Intelligent coordination of multiple specialized agents
+- **Event Categorization**: Automatic organization into meaningful life periods
+- **Source Quality Assessment**: Intelligent selection of the most reliable sources
+- **Observability**: Complete tracking of the research process with Langfuse
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -157,15 +265,19 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 
 ## Roadmap
 
-- [x] Add Changelog
-- [x] Add back to top links
-- [ ] Add Additional Templates w/ Examples
-- [ ] Add "components" document to easily copy & paste sections of the readme
-- [ ] Multi-language Support
-  - [ ] Chinese
-  - [ ] Spanish
+- [x] Core multi-agent architecture
+- [x] Source discovery and selection
+- [x] Event extraction and categorization
+- [x] Event merging and deduplication
+- [x] Langfuse integration for observability
+- [ ] Enhanced event validation and fact-checking
+- [ ] Support for multiple languages
+- [ ] Export to various formats (JSON, CSV, PDF)
+- [ ] Web interface for non-technical users
+- [ ] Integration with historical databases
+- [ ] Real-time collaboration features
 
-See the [open issues](https://github.com/othneildrew/Best-README-Template/issues) for a full list of proposed features (and known issues).
+See the [open issues](https://github.com/bernatsampera/deep-event-research/issues) for a full list of proposed features and known issues.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -184,10 +296,29 @@ Don't forget to give the project a star! Thanks again!
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
+### Development Setup
+
+1. **Install development dependencies**
+
+   ```bash
+   uv sync --dev
+   ```
+
+2. **Run tests**
+
+   ```bash
+   make test
+   ```
+
+3. **Start development server**
+   ```bash
+   make dev
+   ```
+
 ### Top contributors:
 
-<a href="https://github.com/othneildrew/Best-README-Template/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=othneildrew/Best-README-Template" alt="contrib.rocks image" />
+<a href="https://github.com/bernatsampera/deep-event-research/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=bernatsampera/deep-event-research" alt="contrib.rocks image" />
 </a>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -196,7 +327,7 @@ Don't forget to give the project a star! Thanks again!
 
 ## License
 
-Distributed under the Unlicense License. See `LICENSE.txt` for more information.
+Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -204,9 +335,9 @@ Distributed under the Unlicense License. See `LICENSE.txt` for more information.
 
 ## Contact
 
-Your Name - [@your_twitter](https://twitter.com/your_username) - email@example.com
+**Bernat Sampera** - [@bsampera97](https://x.com/bsampera97) - [GitHub](https://github.com/bernatsampera)
 
-Project Link: [https://github.com/your_username/repo_name](https://github.com/your_username/repo_name)
+Project Link: [https://github.com/bernatsampera/deep-event-research](https://github.com/bernatsampera/deep-event-research)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -214,34 +345,41 @@ Project Link: [https://github.com/your_username/repo_name](https://github.com/yo
 
 ## Acknowledgments
 
-Use this space to list resources you find helpful and would like to give credit to. I've included a few of my favorites to kick things off!
+This project was inspired by and builds upon several amazing open-source projects:
 
-- [Choose an Open Source License](https://choosealicense.com)
-- [GitHub Emoji Cheat Sheet](https://www.webpagefx.com/tools/emoji-cheat-sheet)
-- [Malven's Flexbox Cheatsheet](https://flexbox.malven.co/)
-- [Malven's Grid Cheatsheet](https://grid.malven.co/)
-- [Img Shields](https://shields.io)
-- [GitHub Pages](https://pages.github.com)
-- [Font Awesome](https://fontawesome.com)
-- [React Icons](https://react-icons.github.io/react-icons/search)
+- [Open Deep Research](https://github.com/langchain-ai/open_deep_research) by LangChain - For inspiration on deep research methodologies
+- [LangChain](https://github.com/langchain-ai/langchain) - For the foundational LLM framework
+- [LangGraph](https://github.com/langchain-ai/langgraph) - For the multi-agent orchestration capabilities
+- [Firecrawl](https://firecrawl.dev/) - For advanced web scraping capabilities
+- [Tavily](https://tavily.com/) - For intelligent web search
+- [Langfuse](https://langfuse.com/) - For LLM observability and monitoring
+
+Special thanks to the open-source community for making this project possible!
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 
-[contributors-shield]: https://img.shields.io/github/contributors/othneildrew/Best-README-Template.svg?style=for-the-badge
-[contributors-url]: https://github.com/othneildrew/Best-README-Template/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/othneildrew/Best-README-Template.svg?style=for-the-badge
-[forks-url]: https://github.com/othneildrew/Best-README-Template/network/members
-[stars-shield]: https://img.shields.io/github/stars/othneildrew/Best-README-Template.svg?style=for-the-badge
-[stars-url]: https://github.com/othneildrew/Best-README-Template/stargazers
-[issues-shield]: https://img.shields.io/github/issues/othneildrew/Best-README-Template.svg?style=for-the-badge
-[issues-url]: https://github.com/othneildrew/Best-README-Template/issues
-[license-shield]: https://img.shields.io/github/license/othneildrew/Best-README-Template.svg?style=for-the-badge
-[license-url]: https://github.com/othneildrew/Best-README-Template/blob/master/LICENSE.txt
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/othneildrew
-[product-screenshot]: images/screenshot.png
-[langchain.com]: https://img.shields.io/badge/LangChain-ffffff?logo=langchain&logoColor=green
+[contributors-shield]: https://img.shields.io/github/contributors/bernatsampera/deep-event-research.svg?style=for-the-badge
+[contributors-url]: https://github.com/bernatsampera/deep-event-research/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/bernatsampera/deep-event-research.svg?style=for-the-badge
+[forks-url]: https://github.com/bernatsampera/deep-event-research/network/members
+[stars-shield]: https://img.shields.io/github/stars/bernatsampera/deep-event-research.svg?style=for-the-badge
+[stars-url]: https://github.com/bernatsampera/deep-event-research/stargazers
+[issues-shield]: https://img.shields.io/github/issues/bernatsampera/deep-event-research.svg?style=for-the-badge
+[issues-url]: https://github.com/bernatsampera/deep-event-research/issues
+[license-shield]: https://img.shields.io/github/license/bernatsampera/deep-event-research.svg?style=for-the-badge
+[license-url]: https://github.com/bernatsampera/deep-event-research/blob/master/LICENSE.txt
+[langgraph.com]: https://img.shields.io/badge/LangGraph-ffffff?logo=python&logoColor=blue
+[langgraph-url]: https://github.com/langchain-ai/langgraph
+[langchain.com]: https://img.shields.io/badge/LangChain-ffffff?logo=python&logoColor=blue
 [langchain-url]: https://www.langchain.com/
+[firecrawl.com]: https://img.shields.io/badge/Firecrawl-ffffff?logo=fire&logoColor=orange
+[firecrawl-url]: https://firecrawl.dev/
+[tavily.com]: https://img.shields.io/badge/Tavily-ffffff?logo=search&logoColor=green
+[tavily-url]: https://tavily.com/
+[langfuse.com]: https://img.shields.io/badge/Langfuse-ffffff?logo=chart&logoColor=purple
+[langfuse-url]: https://langfuse.com/
+[ollama.com]: https://img.shields.io/badge/Ollama-ffffff?logo=robot&logoColor=blue
+[ollama-url]: https://ollama.ai/
