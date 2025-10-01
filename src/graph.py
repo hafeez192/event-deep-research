@@ -4,8 +4,8 @@ from langchain_core.messages import ToolMessage
 from langfuse import get_client
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
-from src.llm_service import model_for_tools
-from src.prompts import lead_researcher_prompt
+from src.llm_service import model_for_big_queries, model_for_tools
+from src.prompts import events_summarizer_prompt, lead_researcher_prompt
 from src.research_events.research_events_graph import research_events_app
 from src.state import (
     CategoriesWithEvents,
@@ -34,10 +34,7 @@ async def supervisor_node(
     """The 'brain' of the agent. It decides the next action."""
     prompt = lead_researcher_prompt.format(
         person_to_research=state["person_to_research"],
-        existing_events=state.get(
-            "existing_events",
-            CategoriesWithEvents(early="", personal="", career="", legacy=""),
-        ),
+        events_summary=state.get("events_summary", ""),
         messages_summary=state.get("conversation_summary", ""),
         max_iterations=5,
     )
@@ -74,6 +71,7 @@ async def supervisor_tools_node(
         "existing_events",
         CategoriesWithEvents(early="", personal="", career="", legacy=""),
     )
+    events_summary = state.get("events_summary", "")
     used_domains = state.get("used_domains", [])
     last_message = state["conversation_history"][-1]
     iteration_count = state.get("iteration_count", 0)
@@ -119,6 +117,12 @@ async def supervisor_tools_node(
             )
             existing_events = result["existing_events"]
             used_domains = result["used_domains"]
+
+            summarizer_prompt = events_summarizer_prompt.format(
+                existing_events=existing_events
+            )
+            response = await model_for_big_queries.ainvoke(summarizer_prompt)
+
             # structured_llm = model_for_structured.with_structured_output(
             #     CategoriesWithEvents
             # )
@@ -141,6 +145,7 @@ async def supervisor_tools_node(
             #     ),
             # )
             existing_events = existing_events
+            events_summary = response.content
             all_tool_messages.append(
                 ToolMessage(
                     content=str(result), tool_call_id=tool_call["id"], name=tool_name
@@ -156,6 +161,7 @@ async def supervisor_tools_node(
             "conversation_history": all_tool_messages,
             "conversation_summary": conversation_summary,
             "used_domains": used_domains,
+            "events_summary": events_summary,
         },
     )
 

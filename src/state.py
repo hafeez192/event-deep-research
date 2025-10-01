@@ -131,6 +131,10 @@ class SupervisorStateInput(TypedDict):
         default="",
         description="A summary of the conversation history.",
     )
+    events_summary: str = Field(
+        default="",
+        description="A summary of the events.",
+    )
 
 
 class SupervisorState(SupervisorStateInput):

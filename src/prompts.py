@@ -5,9 +5,9 @@ Your focus is to call the "ResearchEventsTool" tool to create a complete list of
 When you are completely satisfied with the research findings returned from the tool calls, then you should call the "ResearchComplete" tool to indicate that you are done with your research.
 </Task>
 
-<Current Events>
-{existing_events}
-</Current Events>
+<Events Summary>
+{events_summary}
+</Events Summary>
 
 <Messages>
 {messages_summary}
@@ -25,8 +25,8 @@ When you call `think_tool`, you MUST construct its `reflection` argument as a mu
 1.  **Last Result:** Briefly describe the outcome of the last tool call. What new information, if any, was added?
 2.  **Top Priority Gap:** Identify the SINGLE most important missing piece of information in the `<Current Events>` (e.g., "Missing his exact birth date and location", or "Missing details about his life in Paris").
 3.  **Planned Query:** Write the EXACT search query you will use in the next `ResearchEventsTool` call to fill that gap. DO NOT describe the query; WRITE the query itself.
-    - BAD: "I will search for his early life."
-    - GOOD: "Query: {person_to_research} childhood Brooklyn parents and education"
+    - BAD: "X Question ."
+    - GOOD: "Query:  X Question about {person_to_research}"
 
 **CRITICAL:** This structured analysis IS the `reflection` argument.
 </Reflection Instructions>
@@ -64,4 +64,20 @@ Format your output as the new summary only (do not repeat the instructions).
 <NEW MESSAGES>
 {new_messages}
 </NEW MESSAGES>
+"""
+
+
+events_summarizer_prompt = """
+You are a timeline summarization expert. Your task is to analyze the following list of events and create a concise, structured summary that highlights covered periods and identifies potential gaps.
+
+**Instructions:**
+1. Read the entire list of events.
+2. Create a bulleted list outlining the key periods or topics that have been covered.
+3. For each period/topic, briefly note the level of detail (e.g., "detailed," "sparse," "high-level overview").
+4. Conclude with a "Potential Gaps" section listing 2-3 obvious areas that need more research.
+
+**Events to Summarize:**
+{existing_events}
+
+**Your Structured Summary:**
 """
