@@ -1,7 +1,8 @@
 import random
-from typing import Literal, TypedDict
+from typing import List, Literal, TypedDict
 
 from langchain_core.tools import tool
+from langfuse.langchain import CallbackHandler
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 from pydantic import BaseModel, Field
@@ -57,9 +58,12 @@ class ChunkWithCategory(TypedDict):
 
 class UrlCrawlerState(InputUrlCrawlerState):
     raw_scraped_content: str
-    text_chunks: list[str]
-    extracted_events: str
-    categorized_chunks: list[ChunkWithCategory]
+    # The queue of work to be done
+    text_chunks: List[str]
+    # The list of completed work
+    categorized_chunks: List[ChunkWithCategory]
+    # Final output
+    extracted_events: str | None
 
 
 class OutputUrlCrawlerState(UrlCrawlerState):
@@ -69,7 +73,7 @@ class OutputUrlCrawlerState(UrlCrawlerState):
 
 async def scrape_content(
     state: UrlCrawlerState,
-) -> Command[Literal["divide_and_extract_chunks"]]:
+) -> Command[Literal["chunk_content"]]:
     url = state.get("url", "")
 
     content = await url_crawl(url)
@@ -79,85 +83,99 @@ async def scrape_content(
         start_index = random.randint(0, len(content) - MAX_CONTENT_LENGTH)
         content = content[start_index : start_index + MAX_CONTENT_LENGTH]
 
-    return Command(
-        goto="divide_and_extract_chunks", update={"raw_scraped_content": content}
-    )
+    return Command(goto="chunk_content", update={"raw_scraped_content": content})
 
 
-async def divide_and_extract_chunks(
+async def chunk_content(
     state: UrlCrawlerState,
-) -> Command[Literal["create_event_list"]]:
+) -> Command[Literal["categorize_chunk"]]:
+    """Takes the raw content and splits it into chunks, initializing the work queue."""
+    print("--- Splitting content into chunks ---")
     content = state.get("raw_scraped_content", "")
-    research_question = state.get("research_question", "")
 
-    # 1. Chunks are divided into chunks by tokens
     text_chunks = chunk_text_by_tokens(
         content, chunk_size=CHUNK_SIZE, overlap_size=OVERLAP_SIZE
     )
 
-    # 2. tools are binded to the model
-    tools = [tool(RelevantChunk), tool(PartialChunk), tool(IrrelevantChunk)]
-    model_tools = model_for_tools.bind_tools(tools)
-
-    # 3. Chunks are analyzed and simplified.
-
-    categorized_chunks = []
-    for chunk in text_chunks:
-        prompt = EXTRACT_EVENTS_PROMPT.format(
-            research_question=research_question, text_chunk=chunk
-        )
-        response = await model_tools.ainvoke(prompt)
-
-        tool_call_name = ""
-        if response.tool_calls:
-            tool_call_name = response.tool_calls[0]["name"]
-        else:
-            categorized_chunks.append(
-                {"content": chunk, "category": "UNKNOWN", "original_chunk": chunk}
-            )
-            continue
-
-        tool_call_args = response.tool_calls[0]["args"]
-        if tool_call_name == "RelevantChunk":
-            categorized_chunks.append(
-                {
-                    "content": chunk,
-                    "category": tool_call_name,
-                    "original_chunk": chunk,
-                }
-            )
-        elif tool_call_name == "PartialChunk":
-            relevant_content = tool_call_args["relevant_content"]
-            categorized_chunks.append(
-                {
-                    "content": relevant_content,
-                    "category": tool_call_name,
-                    "original_chunk": chunk,
-                }
-            )
-        elif tool_call_name == "IrrelevantChunk":
-            categorized_chunks.append(
-                {
-                    "content": "",
-                    "category": tool_call_name,
-                    "original_chunk": chunk,
-                }
-            )
-        else:
-            print("Invalid response: ", response)
-            categorized_chunks.append(
-                {"content": chunk, "category": "UNKNOWN", "original_chunk": chunk}
-            )
-            continue
-
+    # Initialize the categorized_chunks list as empty
     return Command(
-        goto="create_event_list",
-        update={"categorized_chunks": categorized_chunks},
+        goto="categorize_chunk",
+        update={"text_chunks": text_chunks, "categorized_chunks": []},
+    )
+
+
+# Let's define these globally so they aren't recreated on every call
+tools = [tool(RelevantChunk), tool(PartialChunk), tool(IrrelevantChunk)]
+model_tools = model_for_tools.bind_tools(tools)
+
+
+async def categorize_chunk(
+    state: UrlCrawlerState,
+) -> Command[Literal["categorize_chunk", "create_event_list"]]:
+    """Processes a single chunk from the queue. If the queue is empty, it proceeds
+    to the next step. Otherwise, it loops back to itself.
+    """
+    text_chunks = state.get("text_chunks", [])
+    categorized_so_far = state.get("categorized_chunks", [])
+
+    # 1. Check for the exit condition
+    if len(categorized_so_far) >= len(text_chunks):
+        print("--- All chunks categorized. Moving to merge. ---")
+        return Command(goto="create_event_list")
+
+    # 2. Get the next chunk to process
+    current_index = len(categorized_so_far)
+    chunk = text_chunks[current_index]
+    print(f"--- Categorizing chunk {current_index + 1}/{len(text_chunks)} ---")
+
+    # 3. Perform the work for this single chunk (logic moved from the old for-loop)
+    research_question = state.get("research_question", "")
+    prompt = EXTRACT_EVENTS_PROMPT.format(
+        research_question=research_question, text_chunk=chunk
+    )
+    response = await model_tools.ainvoke(prompt)
+
+    # This is the same parsing logic as before, but it creates a single result_dict
+    result_dict = {}
+    tool_call_name = (
+        response.tool_calls[0]["name"] if response.tool_calls else "UNKNOWN"
+    )
+    tool_call_args = response.tool_calls[0]["args"] if response.tool_calls else {}
+
+    if tool_call_name == "RelevantChunk":
+        result_dict = {
+            "content": chunk,
+            "category": tool_call_name,
+            "original_chunk": chunk,
+        }
+    elif tool_call_name == "PartialChunk":
+        relevant_content = tool_call_args.get("relevant_content", "")
+        result_dict = {
+            "content": relevant_content,
+            "category": tool_call_name,
+            "original_chunk": chunk,
+        }
+    elif tool_call_name == "IrrelevantChunk":
+        result_dict = {
+            "content": "",
+            "category": tool_call_name,
+            "original_chunk": chunk,
+        }
+    else:
+        result_dict = {"content": chunk, "category": "UNKNOWN", "original_chunk": chunk}
+
+    # 4. Update the state and loop
+    return Command(
+        goto="categorize_chunk",  # Loop back to this same node
+        update={"categorized_chunks": categorized_so_far + [result_dict]},
     )
 
 
 async def create_event_list(state: UrlCrawlerState) -> Command[Literal["__end__"]]:
+    """Takes the final list of all categorized chunks and extracts a single event list."""
+    print("--- Merging all categorized chunks into a final event list ---")
     categorized_chunks = state.get("categorized_chunks", [])
+
     raw_content = ""
     extracted_events = ""
     for chunk_with_category in categorized_chunks:
@@ -165,7 +183,8 @@ async def create_event_list(state: UrlCrawlerState) -> Command[Literal["__end__"
             state, chunk_with_category["content"]
         )
         extracted_events += event_summary
-        raw_content += chunk_with_category["original_chunk"]
+        # Reconstruct the original content for context if needed
+        raw_content += chunk_with_category.get("original_chunk", "")
 
     return Command(
         goto=END,
@@ -200,12 +219,11 @@ builder = StateGraph(
 )
 
 builder.add_node("scrape_content", scrape_content)
-builder.add_node("divide_and_extract_chunks", divide_and_extract_chunks)
+builder.add_node("chunk_content", chunk_content)
+builder.add_node("categorize_chunk", categorize_chunk)
 builder.add_node("create_event_list", create_event_list)
 # builder.add_node("return_events", return_events)
 builder.add_edge(START, "scrape_content")
-
-from langfuse.langchain import CallbackHandler
 
 langfuse_handler = CallbackHandler()
 

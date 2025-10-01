@@ -91,22 +91,6 @@ async def merge_categorizations(
     )
 
 
-# async def categorize_events(
-#     state: MergeEventsState,
-# ) -> Command[Literal["combine_new_and_original_events"]]:
-#     raw_extracted_events = state.get("raw_extracted_events", "")
-
-#     prompt = categorize_events_prompt.format(events=raw_extracted_events)
-
-#     structured_llm = model_for_structured.with_structured_output(CategoriesWithEvents)
-
-#     response = await structured_llm.ainvoke(prompt)
-#     return Command(
-#         goto="combine_new_and_original_events",
-#         update={"extracted_events_categorized": response},
-#     )
-
-
 async def combine_new_and_original_events(state: MergeEventsState) -> Command:
     """Merge original and new events for each category using an LLM."""
     print("Combining new and original events...")
