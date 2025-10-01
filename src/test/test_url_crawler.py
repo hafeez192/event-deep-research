@@ -118,7 +118,7 @@ async def test_url_crawler_with_mocked_llm(
     with (
         patch("url_crawler.url_krawler_graph.url_crawl") as mock_crawl,
         patch("url_crawler.url_krawler_graph.model_for_tools") as mock_model_tools,
-        patch("url_crawler.url_krawler_graph.model_for_big_queries") as mock_model_big,
+        patch("url_crawler.url_krawler_graph.model_for_structured") as mock_model_big,
     ):
         # Configure URL crawling mock
         mock_crawl.return_value = mock_scraped_content
@@ -128,7 +128,7 @@ async def test_url_crawler_with_mocked_llm(
         mock_tools_model.ainvoke.side_effect = mock_llm_responses
         mock_model_tools.bind_tools.return_value = mock_tools_model
 
-        # Configure model_for_big_queries mock (for event summarization)
+        # Configure model_for_structured mock (for event summarization)
         mock_model_big.ainvoke = AsyncMock(
             side_effect=[MockResponse(summary) for summary in mock_event_summaries]
         )

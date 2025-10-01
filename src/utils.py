@@ -1,6 +1,6 @@
 from langchain_core.messages import MessageLikeRepresentation
 from langchain_core.tools import tool
-from src.llm_service import model_for_big_queries
+from src.llm_service import model_for_structured
 from src.prompts import create_messages_summary_prompt
 from src.state import SupervisorState
 
@@ -15,7 +15,7 @@ async def create_messages_summary(
         previous_messages_summary=previous_messages_summary,
     )
 
-    response = await model_for_big_queries.ainvoke(prompt)
+    response = await model_for_structured.ainvoke(prompt)
     return response.content
 
 

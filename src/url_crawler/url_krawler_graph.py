@@ -6,7 +6,7 @@ from langfuse.langchain import CallbackHandler
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 from pydantic import BaseModel, Field
-from src.llm_service import model_for_big_queries, model_for_tools
+from src.llm_service import model_for_structured, model_for_tools
 from src.url_crawler.prompts import (
     EXTRACT_EVENTS_PROMPT,
     create_event_list_prompt,
@@ -100,7 +100,7 @@ async def chunk_content(
     # Initialize the categorized_chunks list as empty
     return Command(
         goto="categorize_chunk",
-        update={"text_chunks": text_chunks[:2], "categorized_chunks": []},
+        update={"text_chunks": text_chunks, "categorized_chunks": []},
     )
 
 
@@ -208,7 +208,7 @@ async def create_event_list_from_chunks(
             research_question=research_question, newly_extracted_events=chunk_content
         )
 
-        final_summary = await model_for_big_queries.ainvoke(prompt)
+        final_summary = await model_for_structured.ainvoke(prompt)
         return final_summary.content
 
     return ""

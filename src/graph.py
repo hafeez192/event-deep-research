@@ -4,7 +4,7 @@ from langchain_core.messages import ToolMessage
 from langfuse import get_client
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
-from src.llm_service import model_for_big_queries, model_for_tools
+from src.llm_service import model_for_structured, model_for_tools
 from src.prompts import events_summarizer_prompt, lead_researcher_prompt
 from src.research_events.research_events_graph import research_events_app
 from src.state import (
@@ -121,7 +121,7 @@ async def supervisor_tools_node(
             summarizer_prompt = events_summarizer_prompt.format(
                 existing_events=existing_events
             )
-            response = await model_for_big_queries.ainvoke(summarizer_prompt)
+            response = await model_for_structured.ainvoke(summarizer_prompt)
 
             # structured_llm = model_for_structured.with_structured_output(
             #     CategoriesWithEvents

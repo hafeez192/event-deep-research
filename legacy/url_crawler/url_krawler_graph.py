@@ -10,7 +10,7 @@ from legacy.url_crawler.utils import (
     count_tokens,
     url_crawl,
 )
-from legacy.utils import model_for_big_queries, model_for_tools
+from legacy.utils import model_for_structured, model_for_tools
 from pydantic import BaseModel, Field
 
 
@@ -201,7 +201,7 @@ async def update_event_summary(state: UrlCrawlerState, chunk_content: str) -> st
             historical_figure=historical_figure, newly_extracted_events=chunk_content
         )
 
-        final_summary = await model_for_big_queries.ainvoke(consolidation_prompt)
+        final_summary = await model_for_structured.ainvoke(consolidation_prompt)
         return final_summary.content
 
     return ""

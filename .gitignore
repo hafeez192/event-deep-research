@@ -19,3 +19,6 @@ backend/scripts/
 backend/src/data/*
 
 .langgraph_api/**
+
+
+src/data/*

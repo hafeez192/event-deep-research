@@ -88,6 +88,4 @@ def get_llm(model_name: str, **kwargs: Any) -> LLMWithTemperatureCheck:
 
 
 model_for_tools = get_llm("ollama:gpt-oss:20b")
-model_for_big_queries = get_llm("ollama:gemma3:12b")
-# model_for_structured = get_llm("ollama:llama3.1:latest")
 model_for_structured = get_llm("ollama:mistral-nemo:latest")
