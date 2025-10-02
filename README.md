@@ -12,25 +12,6 @@
 
 <!-- PROJECT LOGO -->
 <br />
-<div align="center">
-  <a href="https://github.com/bernatsampera/deep-event-research">
-    <img src="https://img.icons8.com/color/96/000000/robot-2.png" alt="Logo" width="80" height="80">
-  </a>
-
-  <h3 align="center">Deep Event Research</h3>
-
-  <p align="center">
-    AI-powered biographical research agent that discovers and compiles life events of historical figures
-    <br />
-    <a href="https://github.com/bernatsampera/deep-event-research"><strong>Explore the docs »</strong></a>
-    <br />
-    <br />
-    <a href="https://github.com/bernatsampera/deep-event-research/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
-    &middot;
-    <a href="https://github.com/bernatsampera/deep-event-research/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
-  </p>
-</div>
-
 <!-- TABLE OF CONTENTS -->
 <details>
   <summary>Table of Contents</summary>
@@ -65,18 +46,59 @@
 
 Deep Event Research is an intelligent AI agent that automatically discovers, extracts, and compiles biographical events of historical figures. Built with LangGraph, it uses advanced context engineering techniques and a supervisor pattern to orchestrate multiple research agents that work together to create comprehensive life timelines.
 
-Here's why this project is unique:
-
-- **🤖 Multi-Agent Architecture**: Uses LangGraph's supervisor pattern to coordinate specialized research agents
-- **🔍 Intelligent Source Selection**: Automatically finds and evaluates the best biographical sources using Tavily search
-- **📚 Smart Event Categorization**: Organizes events into meaningful categories (early life, personal, career, legacy)
-- **🔄 Event Merging & Deduplication**: Intelligently combines information from multiple sources while avoiding duplicates
-- **📊 Full Observability**: Integrated with Langfuse for complete research process tracking
-- **⚡ Context Engineering**: Advanced prompt engineering techniques for accurate event extraction
-
-Perfect for researchers, historians, students, and anyone interested in exploring the lives of historical figures through AI-powered research.
+[![Agent Graph][graph-screenshot]](https://kronologs.com)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+# What it does?
+
+It looks for information about the historical figure in the web, it extracts the events from the sources and it creates a timeline of the life of the figure.
+
+Start:
+
+```json
+{
+  "person_to_research": "Henry Miller"
+}
+```
+
+End:
+
+```json
+{
+  "events": [
+    {
+      "name": "Birth in Brooklyn",
+      "description": "Lived at 662 Driggs Avenue, Williamsburg, Brooklyn. with his parents",
+      "date": {
+        "year": 1909,
+        "note": "circa"
+      },
+      "location": {
+        "name": "Brooklyn",
+        "lat": 40.6526006,
+        "lng": -73.9497211
+      },
+      "id": 1
+    },
+    {
+      "name": "Moved to Bushwick",
+      "description": "Moved to Decatur Street, Bushwick, Brooklyn. with his partner Beatrice Sylvas Wickens",
+      "date": {
+        "year": 1917,
+        "note": null
+      },
+      "location": {
+        "name": "Bushwick, Brooklyn",
+        "lat": 40.6942696,
+        "lng": -73.9187482
+      },
+      "id": 2
+    },
+    Many more events...
+  ]
+}
+```
 
 ### Built With
 
@@ -107,8 +129,9 @@ Before you begin, ensure you have the following installed:
   # Install Ollama
   curl -fsSL https://ollama.ai/install.sh | sh
 
-  # Pull a model (e.g., Llama 3.1)
-  ollama pull llama3.1
+  # Pull a model (e.g., I recommend the following models, gpt-oss:20b (for tool selection) and mistral-nemo:latest (for structured output, there is a bug with gpt-oss:20b))
+  ollama pull gpt-oss:20b
+  ollama pull mistral-nemo:latest
   ```
 
 ### Installation
@@ -120,9 +143,10 @@ Before you begin, ensure you have the following installed:
    cd deep-event-research
    ```
 
-2. **Install dependencies**
+2. **Create virtual environment and install dependencies**
 
    ```bash
+   uv venv && source .venv/bin/activate
    uv sync
    ```
 
@@ -145,9 +169,14 @@ Before you begin, ensure you have the following installed:
    ```
 
 4. **Start LangGraph Studio**
+
    ```bash
-   make dev
+    uvx --refresh --from "langgraph-cli[inmem]" --with-editable . --python 3.12 langgraph dev --allow-blocking
    ```
+
+5. Langgraph Studio should open at http://localhost:2024 and you should see a graph like this:
+
+   ![Langgraph Studio Graph](images/kronologs-lgstudiograph.webp)
 
 ### Configuration
 
@@ -165,16 +194,7 @@ The project uses several configuration files:
 
 ### Running the Research Agent
 
-1. **Start LangGraph Studio**
-
-   ```bash
-   make dev
-   ```
-
-2. **Access the Studio Interface**
-   Open your browser to `http://localhost:8123`
-
-3. **Run the Supervisor Graph**
+1. **Run the Supervisor Graph**
 
    - Select the `supervisor` graph
    - Input your research query:
@@ -185,7 +205,7 @@ The project uses several configuration files:
    }
    ```
 
-4. **Monitor the Research Process**
+2. **Monitor the Research Process**
    The agent will automatically:
    - Search for biographical sources
    - Extract relevant events
@@ -235,22 +255,6 @@ Deep Event Research uses a sophisticated multi-agent architecture built on LangG
 3. **URL Crawler Agent**: Extracts content from web pages
 4. **Merge Events Agent**: Combines and deduplicates information
 
-### Research Flow
-
-```mermaid
-graph TD
-    A[Research Query] --> B[Supervisor Agent]
-    B --> C[Find Sources]
-    C --> D[Select Best URLs]
-    D --> E[Crawl Content]
-    E --> F[Extract Events]
-    F --> G[Merge & Deduplicate]
-    G --> H[Update Timeline]
-    H --> I{More Research Needed?}
-    I -->|Yes| B
-    I -->|No| J[Final Timeline]
-```
-
 ### Key Features
 
 - **Context Engineering**: Advanced prompt engineering for accurate event extraction
@@ -260,22 +264,6 @@ graph TD
 - **Observability**: Complete tracking of the research process with Langfuse
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- ROADMAP -->
-
-## Roadmap
-
-- [x] Core multi-agent architecture
-- [x] Source discovery and selection
-- [x] Event extraction and categorization
-- [x] Event merging and deduplication
-- [x] Langfuse integration for observability
-- [ ] Enhanced event validation and fact-checking
-- [ ] Support for multiple languages
-- [ ] Export to various formats (JSON, CSV, PDF)
-- [ ] Web interface for non-technical users
-- [ ] Integration with historical databases
-- [ ] Real-time collaboration features
 
 See the [open issues](https://github.com/bernatsampera/deep-event-research/issues) for a full list of proposed features and known issues.
 
@@ -375,11 +363,12 @@ Special thanks to the open-source community for making this project possible!
 [langgraph-url]: https://github.com/langchain-ai/langgraph
 [langchain.com]: https://img.shields.io/badge/LangChain-ffffff?logo=python&logoColor=blue
 [langchain-url]: https://www.langchain.com/
-[firecrawl.com]: https://img.shields.io/badge/Firecrawl-ffffff?logo=fire&logoColor=orange
+[firecrawl.com]: https://img.shields.io/badge/Firecrawl-ffffff?logo=firebase&logoColor=orange
 [firecrawl-url]: https://firecrawl.dev/
-[tavily.com]: https://img.shields.io/badge/Tavily-ffffff?logo=search&logoColor=green
+[tavily.com]: https://img.shields.io/badge/Tavily-ffffff?logo=algolia&logoColor=green
 [tavily-url]: https://tavily.com/
-[langfuse.com]: https://img.shields.io/badge/Langfuse-ffffff?logo=chart&logoColor=purple
+[langfuse.com]: https://img.shields.io/badge/Langfuse-ffffff?logo=chartdotjs&logoColor=purple
 [langfuse-url]: https://langfuse.com/
-[ollama.com]: https://img.shields.io/badge/Ollama-ffffff?logo=robot&logoColor=blue
+[ollama.com]: https://img.shields.io/badge/Ollama-ffffff?logo=robotframework&logoColor=blue
 [ollama-url]: https://ollama.ai/
+[graph-screenshot]: images/kronologs-graph.webp
