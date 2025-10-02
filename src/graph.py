@@ -5,10 +5,15 @@ from langfuse import get_client
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 from src.llm_service import model_for_structured, model_for_tools
-from src.prompts import events_summarizer_prompt, lead_researcher_prompt
+from src.prompts import (
+    events_summarizer_prompt,
+    lead_researcher_prompt,
+    structure_events_prompt,
+)
 from src.research_events.research_events_graph import research_events_app
 from src.state import (
     CategoriesWithEvents,
+    Chronology,
     FinishResearchTool,
     ResearchEventsTool,
     SupervisorState,
@@ -65,7 +70,7 @@ async def supervisor_node(
 
 async def supervisor_tools_node(
     state: SupervisorState,
-) -> Command[Literal["supervisor", "__end__"]]:
+) -> Command[Literal["supervisor", "structure_events"]]:
     """The 'hands' of the agent. Executes tools and returns a Command for routing."""
     existing_events = state.get(
         "existing_events",
@@ -89,7 +94,7 @@ async def supervisor_tools_node(
         tool_args = tool_call["args"]
 
         if tool_name == "FinishResearchTool":
-            return Command(goto=END)
+            return Command(goto="structure_events")
 
         elif tool_name == "think_tool":
             # The 'think' tool is special: it just records a reflection.
@@ -166,11 +171,43 @@ async def supervisor_tools_node(
     )
 
 
+async def structure_events(state: SupervisorState) -> Command[Literal["__end__"]]:
+    """Step 2: Structures the cleaned events into JSON format.
+
+    Args:
+        state: Current researcher state with cleaned events text.
+        config: Runtime configuration with model settings.
+
+    Returns:
+        Dictionary containing a list of structured chronology events.
+    """
+    print("--- Step 2: Structuring Events into JSON ---")
+
+    # Get the cleaned events from the previous step
+    existing_events = state.get("events_summary", "")
+
+    if not existing_events or len(existing_events) == 0:
+        print("Warning: No cleaned events text found in state")
+        return {"chronology": []}
+
+    structured_llm = model_for_structured.with_structured_output(Chronology)
+
+    prompt = structure_events_prompt.format(existing_events=existing_events)
+
+    # Invoke the second model to get the final structured output
+    structured_response = await structured_llm.ainvoke(prompt)
+
+    return {
+        "structured_events": structured_response.events,
+    }
+
+
 workflow = StateGraph(SupervisorState, input_schema=SupervisorStateInput)
 
 # Add the two core nodes
 workflow.add_node("supervisor", supervisor_node)
 workflow.add_node("supervisor_tools", supervisor_tools_node)
+workflow.add_node("structure_events", structure_events)
 
 workflow.add_edge(START, "supervisor")
 

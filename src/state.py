@@ -143,3 +143,4 @@ class SupervisorState(SupervisorStateInput):
     final_events: List[ChronologyEvent]
     conversation_history: Annotated[list[MessageLikeRepresentation], override_reducer]
     iteration_count: int = 0
+    structured_events: list[ChronologyEvent] | None

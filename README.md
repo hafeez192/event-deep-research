@@ -94,8 +94,7 @@ End:
         "lng": -73.9187482
       },
       "id": 2
-    },
-    Many more events...
+    }
   ]
 }
 ```

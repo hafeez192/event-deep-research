@@ -81,3 +81,27 @@ You are a timeline summarization expert. Your task is to analyze the following l
 
 **Your Structured Summary:**
 """
+
+
+structure_events_prompt = """You are a data processing specialist. Your sole task is to convert a pre-cleaned, chronologically ordered list of life events into a structured JSON object.
+
+<Task>
+You will be given a list of events that is already de-duplicated and ordered. You must not change the order or content of the events. For each event in the list, you will extract its name, a detailed description, its date, and location, and format it as JSON.
+</Task>
+
+<Guidelines>
+1.  For the `name` field, create a short, descriptive title for the event (e.g., "Birth of Pablo Picasso").
+2.  For the `description` field, provide the clear and concise summary of what happened from the input text.
+3.  For the `date` field, populate `year`, `month`, and `day` whenever possible.
+4.  If the date is an estimate or a range (e.g., "circa 1912" or "Between 1920-1924"), you MUST capture that specific text in the `note` field of the date object, and provide your best estimate for the `year`.
+5. For the `location` field, populate the location of the event, leave blank if not mentioned
+</Guidelines>
+
+<Chronological Events List>
+----
+{existing_events}
+----
+</Chronological Events List>
+
+CRITICAL: You must only return the structured JSON output. Do not add any commentary, greetings, or explanations before or after the JSON.
+"""

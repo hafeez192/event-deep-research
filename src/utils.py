@@ -27,6 +27,8 @@ def think_tool(reflection: str) -> str:
 
     You MUST use this tool immediately after every ResearchEventsTool call.
 
+    Analyze if an additional call to the ResearchEventsTool is needed to fill the gaps or the research is completed. When is completed, you must call the FinishResearchTool.
+
     The `reflection` argument must follow the structure defined in the system prompt, culminating in the precise search query you will use next.
 
     Args:
