@@ -15,7 +15,7 @@ def sample_input_state() -> dict:
     """Provide a sample input state for the url_crawler_app graph."""
     return {
         "url": "https://www.britannica.com/biography/Henry-Miller",
-        "historical_figure": "Henry Miller",
+        "research_question": "Research the life of Henry Miller",
     }
 
 
@@ -189,11 +189,26 @@ async def test_url_crawler_with_real_llm(sample_input_state: dict):
 async def test_url_crawler_with_mocked_url_crawling(
     sample_input_state: dict,
     mock_scraped_content: str,
+    mock_llm_responses: list,
+    mock_event_summaries: list,
 ):
-    """Test URL crawler with mocked URL crawling but real LLM calls."""
-    # --- Act: Execute with mocked URL crawling ---
-    with patch("url_crawler.url_krawler_graph.url_crawl") as mock_crawl:
+    """Test URL crawler with mocked URL crawling and mocked LLM calls."""
+    # --- Act: Execute with mocked URL crawling and LLM ---
+    with (
+        patch("url_crawler.url_krawler_graph.url_crawl") as mock_crawl,
+        patch("url_crawler.url_krawler_graph.model_tools") as mock_model_tools,
+        patch("url_crawler.url_krawler_graph.model_for_structured") as mock_model_big,
+    ):
+        # Configure URL crawling mock
         mock_crawl.return_value = mock_scraped_content
+
+        # Configure model_tools mock (for chunk categorization)
+        mock_model_tools.ainvoke = AsyncMock(side_effect=mock_llm_responses)
+
+        # Configure model_for_structured mock (for event summarization)
+        mock_model_big.ainvoke = AsyncMock(
+            side_effect=[MockResponse(summary) for summary in mock_event_summaries]
+        )
 
         result = await url_crawler_app.ainvoke(sample_input_state)
 

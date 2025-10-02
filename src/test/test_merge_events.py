@@ -99,8 +99,8 @@ async def test_merge_events_with_mocked_llm(
         result = await merge_events_app.ainvoke(sample_input_state)
 
     # --- Assert: Verify the output ---
-    assert "final_events" in result
-    merged_events = result["final_events"]
+    assert "existing_events" in result
+    merged_events = result["existing_events"]
 
     assert isinstance(merged_events, CategoriesWithEvents)
     assert (
@@ -121,8 +121,8 @@ async def test_merge_events_with_real_llm(sample_input_state: dict):
     result = await merge_events_app.ainvoke(sample_input_state)
 
     # --- Assert ---
-    assert "final_events" in result
-    merged = result["final_events"]
+    assert "existing_events" in result
+    merged = result["existing_events"]
     assert isinstance(merged, CategoriesWithEvents)
 
     all_merged_text = " ".join(vars(merged).values())
