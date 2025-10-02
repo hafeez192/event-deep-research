@@ -4,10 +4,11 @@ from typing import List, Literal, TypedDict
 from langchain_core.tools import tool
 from langfuse.langchain import CallbackHandler
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import RunnableConfig
 from langgraph.types import Command
 from pydantic import BaseModel, Field
 from src.configuration import Configuration
-from src.llm_service import model_for_structured, model_for_tools
+from src.llm_service import create_structured_model, create_tools_model
 from src.url_crawler.prompts import (
     EXTRACT_EVENTS_PROMPT,
     create_event_list_prompt,
@@ -105,13 +106,9 @@ async def chunk_content(
     )
 
 
-# Let's define these globally so they aren't recreated on every call
-tools = [tool(RelevantChunk), tool(PartialChunk), tool(IrrelevantChunk)]
-model_tools = model_for_tools.bind_tools(tools)
-
-
 async def categorize_chunk(
     state: UrlCrawlerState,
+    config: RunnableConfig,
 ) -> Command[Literal["categorize_chunk", "create_event_list"]]:
     """Processes a single chunk from the queue. If the queue is empty, it proceeds
     to the next step. Otherwise, it loops back to itself.
@@ -134,6 +131,10 @@ async def categorize_chunk(
     prompt = EXTRACT_EVENTS_PROMPT.format(
         research_question=research_question, text_chunk=chunk
     )
+
+    # Let's define these globally so they aren't recreated on every call
+    tools = [tool(RelevantChunk), tool(PartialChunk), tool(IrrelevantChunk)]
+    model_tools = create_tools_model(tools=tools, config=config)
     response = await model_tools.ainvoke(prompt)
 
     # This is the same parsing logic as before, but it creates a single result_dict
@@ -197,7 +198,7 @@ async def create_event_list(state: UrlCrawlerState) -> Command[Literal["__end__"
 
 
 async def create_event_list_from_chunks(
-    state: UrlCrawlerState, chunk_content: str
+    state: UrlCrawlerState, chunk_content: str, config: RunnableConfig
 ) -> str:
     """Chunks large text, extracts events in parallel, and consolidates them
     with the previous summary.
@@ -209,7 +210,7 @@ async def create_event_list_from_chunks(
             research_question=research_question, newly_extracted_events=chunk_content
         )
 
-        final_summary = await model_for_structured.ainvoke(prompt)
+        final_summary = await create_structured_model(config=config).ainvoke(prompt)
         return final_summary.content
 
     return ""

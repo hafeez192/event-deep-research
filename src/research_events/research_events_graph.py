@@ -3,10 +3,11 @@ from urllib.parse import urlparse
 
 from langchain_tavily import TavilySearch
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import RunnableConfig
 from langgraph.types import Command
 from pydantic import BaseModel, Field
 from src.configuration import Configuration
-from src.llm_service import model_for_structured
+from src.llm_service import create_structured_model
 from src.research_events.merge_events.merge_events_graph import merge_events_app
 from src.state import CategoriesWithEvents
 from src.url_crawler.url_krawler_graph import url_crawler_app
@@ -35,6 +36,7 @@ class BestUrls(BaseModel):
 
 def url_finder(
     state: ResearchEventsState,
+    config: RunnableConfig,
 ) -> Command[Literal["should_process_url_router"]]:
     """Find the urls for the research_question"""
     research_question = state.get("research_question", "")
@@ -72,7 +74,7 @@ def url_finder(
 
     prompt = prompt.format(results=urls, research_question=research_question)
 
-    structured_llm = model_for_structured.with_structured_output(BestUrls)
+    structured_llm = create_structured_model(config=config, class_name=BestUrls)
 
     structured_result = structured_llm.invoke(prompt)
 

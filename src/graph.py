@@ -5,7 +5,10 @@ from langchain_core.runnables import RunnableConfig
 from langfuse import get_client
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
-from src.llm_service import create_tools_model, model_for_structured
+from src.llm_service import (
+    create_structured_model,
+    create_tools_model,
+)
 from src.prompts import (
     create_messages_summary_prompt,
     events_summarizer_prompt,
@@ -36,7 +39,9 @@ MAX_TOOL_CALL_ITERATIONS = 7
 
 
 async def create_messages_summary(
-    state: SupervisorState, new_messages: list[MessageLikeRepresentation]
+    state: SupervisorState,
+    new_messages: list[MessageLikeRepresentation],
+    config: RunnableConfig,
 ) -> str:
     previous_messages_summary = state.get("conversation_summary", "")
     """Create a summary of the messages."""
@@ -45,7 +50,7 @@ async def create_messages_summary(
         previous_messages_summary=previous_messages_summary,
     )
 
-    response = await model_for_structured.ainvoke(prompt)
+    response = await create_structured_model(config=config).ainvoke(prompt)
     return response.content
 
 
@@ -76,7 +81,7 @@ async def supervisor_node(
 
     response = await tools_model.ainvoke(prompt)
 
-    conversation_summary = await create_messages_summary(state, [response])
+    conversation_summary = await create_messages_summary(state, [response], config)
 
     # The output is an AIMessage with tool_calls, which we add to the history
     return Command(
@@ -91,6 +96,7 @@ async def supervisor_node(
 
 async def supervisor_tools_node(
     state: SupervisorState,
+    config: RunnableConfig,
 ) -> Command[Literal["supervisor", "structure_events"]]:
     """The 'hands' of the agent. Executes tools and returns a Command for routing."""
     existing_events = state.get(
@@ -147,29 +153,10 @@ async def supervisor_tools_node(
             summarizer_prompt = events_summarizer_prompt.format(
                 existing_events=existing_events
             )
-            response = await model_for_structured.ainvoke(summarizer_prompt)
+            response = await create_structured_model(config=config).ainvoke(
+                summarizer_prompt
+            )
 
-            # structured_llm = model_for_structured.with_structured_output(
-            #     CategoriesWithEvents
-            # )
-
-            # prompt = "Add some events to the existing events that response to the research question: {research_question}. Existing events: {existing_events}"
-            # prompt = prompt.format(
-            #     research_question=research_question, existing_events=existing_events
-            # )
-
-            # result = await structured_llm.ainvoke(prompt)
-
-            # print("result", result)
-
-            # mockCombinedEvents = (
-            #     CategoriesWithEvents(
-            #         early="- Henry Valentine Miller was born in New York City on December 26, 1891.\n- He lived at 450 East 85th Street in Manhattan during his early years.\n- His family moved to Williamsburg, Brooklyn when he was around nine years old, and later to Bushwick.\n- Miller attended Eastern District High School in Williamsburg.\n- He briefly studied at the City College of New York.\n- Miller became active with the Socialist Party of America.\n- He admired Hubert Harrison.",
-            #         personal="- Miller married Beatrice Sylvas Wickens in 1917 and divorced her in 1923. They had a daughter, Barbara.\n- Miller met June Mansfield around 1924 and they married on June 1, 1924.\n- Miller lived with Kronski at some point between 1926-1927.\n- Miller moved to Paris in 1930. He spent several months there with June in 1938. During his ten-year stay in Paris, Miller became fluent in French.\n- Miller returned to New York in 1940 and moved to California in 1942, initially residing just outside Hollywood in Beverly Glen before settling in Big Sur in 1944.\n- Miller married Janina Martha Lepska in 1944 and had two children with her. They divorced in 1952.\n- Miller married Eve McClure in 1953 but they divorced in 1960.\n- Miller married Hiroko Tokuda in 1967 but they divorced in 1977.",
-            #         career="- Miller quit Western Union to dedicate himself to writing in 1924.\n- He was supported financially by Roland Freedman who paid June Mansfield to write a novel, pretending it was her work and reviewing Miller's writing weekly.\n- Miller moved to Paris unaccompanied in 1930.\n- He was employed as a proofreader for the Chicago Tribune Paris edition in 1931 thanks to Alfred Perlès.\n- This period marked a creative time for Miller, and he began building a network of authors around Villa Seurat.\n- Lawrence Durrell became a lifelong friend.\n- Anaïs Nin and Hugh Guiler financially supported Miller between 1931-1934, covering his living expenses including rent at 18 Villa Seurat.\n- Nin became his lover and financed the first printing of Tropic of Cancer in 1934 with money from Otto Rank.",
-            #         legacy="- Miller was nominated for the Nobel Prize in Literature by University of Copenhagen professor Allan Philip in 1973.\n- Miller participated in the filming of Reds in the late 1970s.\n- Miller held an ongoing correspondence of over 1,500 letters with Brenda Venus between 1978 and 1981.\n- Miller died on June 7, 1980 at his home in Pacific Palisades, Los Angeles, aged 88.\n- The Henry Miller Memorial Library was founded in Big Sur in 1981 by Emil White.",
-            #     ),
-            # )
             existing_events = existing_events
             events_summary = response.content
             all_tool_messages.append(
@@ -178,7 +165,9 @@ async def supervisor_tools_node(
                 )
             )
 
-    conversation_summary = await create_messages_summary(state, all_tool_messages)
+    conversation_summary = await create_messages_summary(
+        state, all_tool_messages, config
+    )
     # The Command helper tells the graph where to go next and what state to update.
     return Command(
         goto="supervisor",
@@ -192,7 +181,9 @@ async def supervisor_tools_node(
     )
 
 
-async def structure_events(state: SupervisorState) -> Command[Literal["__end__"]]:
+async def structure_events(
+    state: SupervisorState, config: RunnableConfig
+) -> Command[Literal["__end__"]]:
     """Step 2: Structures the cleaned events into JSON format.
 
     Args:
@@ -211,7 +202,7 @@ async def structure_events(state: SupervisorState) -> Command[Literal["__end__"]
         print("Warning: No cleaned events text found in state")
         return {"chronology": []}
 
-    structured_llm = model_for_structured.with_structured_output(Chronology)
+    structured_llm = create_structured_model(config=config, class_name=Chronology)
 
     prompt = structure_events_prompt.format(existing_events=existing_events)
 

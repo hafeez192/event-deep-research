@@ -4,6 +4,7 @@ from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_core.tools import BaseTool
+from pydantic import BaseModel
 from src.configuration import Configuration
 from src.utils import get_api_key_for_model
 
@@ -59,12 +60,17 @@ def create_tools_model(tools: List[Type[BaseTool]], config: RunnableConfig) -> R
 
 
 # --- Public Function 2: For Models WITHOUT Tools ---
-def create_structured_model(config: RunnableConfig) -> Runnable:
+def create_structured_model(
+    config: RunnableConfig, class_name: Type[BaseModel] | None = None
+) -> Runnable:
     """Creates a general-purpose chat model with no tools."""
     configurable = Configuration.from_runnable_config(config)
 
     # The chain is just the base model itself
-    base_model = configurable_model
+    if class_name:
+        base_model = configurable_model.with_structured_output(class_name)
+    else:
+        base_model = configurable_model
 
     return _build_and_configure_model(
         config=config,

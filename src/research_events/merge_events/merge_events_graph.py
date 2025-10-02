@@ -1,10 +1,10 @@
 from typing import Literal, TypedDict
 
 from langgraph.graph import START, StateGraph
-from langgraph.graph.state import Command
+from langgraph.graph.state import Command, RunnableConfig
 from langgraph.pregel.main import asyncio
 from src.configuration import Configuration
-from src.llm_service import model_for_structured
+from src.llm_service import create_structured_model
 from src.research_events.merge_events.prompts import (
     MERGE_EVENTS_TEMPLATE,
     categorize_events_prompt,
@@ -50,6 +50,7 @@ async def split_events(
 
 async def categorize_chunk(
     state: MergeEventsState,
+    config: RunnableConfig,
 ) -> Command[Literal["categorize_chunk", "merge_categorizations"]]:
     chunks = state.get("chunked_events", [])
     done = state.get("chunked_events_categorized", [])
@@ -62,7 +63,9 @@ async def categorize_chunk(
     next_chunk = chunks[len(done)]
     prompt = categorize_events_prompt.format(events=next_chunk)
 
-    structured_llm = model_for_structured.with_structured_output(CategoriesWithEvents)
+    structured_llm = create_structured_model(
+        config=config, class_name=CategoriesWithEvents
+    )
     response = await structured_llm.ainvoke(prompt)
 
     return Command(
@@ -95,7 +98,9 @@ async def merge_categorizations(
     )
 
 
-async def combine_new_and_original_events(state: MergeEventsState) -> Command:
+async def combine_new_and_original_events(
+    state: MergeEventsState, config: RunnableConfig
+) -> Command:
     """Merge original and new events for each category using an LLM."""
     print("Combining new and original events...")
 
@@ -134,7 +139,9 @@ async def combine_new_and_original_events(state: MergeEventsState) -> Command:
             original=existing_display,
             new=new_display,
         )
-        merge_tasks.append((category, model_for_structured.ainvoke(prompt)))
+        merge_tasks.append(
+            (category, create_structured_model(config=config).ainvoke(prompt))
+        )
 
     final_merged_dict = {}
     if merge_tasks:
