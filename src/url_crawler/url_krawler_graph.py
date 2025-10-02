@@ -173,7 +173,9 @@ async def categorize_chunk(
     )
 
 
-async def create_event_list(state: UrlCrawlerState) -> Command[Literal["__end__"]]:
+async def create_event_list(
+    state: UrlCrawlerState, config: RunnableConfig
+) -> Command[Literal["__end__"]]:
     """Takes the final list of all categorized chunks and extracts a single event list."""
     print("--- Merging all categorized chunks into a final event list ---")
     categorized_chunks = state.get("categorized_chunks", [])
@@ -182,7 +184,7 @@ async def create_event_list(state: UrlCrawlerState) -> Command[Literal["__end__"
     extracted_events = ""
     for chunk_with_category in categorized_chunks:
         event_summary = await create_event_list_from_chunks(
-            state, chunk_with_category["content"]
+            state, chunk_with_category["content"], config
         )
         extracted_events += event_summary
         # Reconstruct the original content for context if needed

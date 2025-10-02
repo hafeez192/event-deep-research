@@ -1,7 +1,7 @@
 import re
 from typing import List
 
-import requests
+import aiohttp
 import tiktoken
 
 FIRECRAWL_API_URL = "http://localhost:3002/v0/scrape"
@@ -22,19 +22,20 @@ async def url_crawl(url: str) -> str:
 async def scrape_page_content(url):
     """Scrapes URL using Firecrawl API and returns Markdown content."""
     try:
-        response = requests.post(
-            FIRECRAWL_API_URL,
-            json={
-                "url": url,
-                "pageOptions": {"onlyMainContent": True},
-                "formats": ["markdown"],
-            },
-            headers={"Content-Type": "application/json"},
-            timeout=30,
-        )
-        response.raise_for_status()
-        data = response.json()
-        return data.get("data", {}).get("markdown")
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                FIRECRAWL_API_URL,
+                json={
+                    "url": url,
+                    "pageOptions": {"onlyMainContent": True},
+                    "formats": ["markdown"],
+                },
+                headers={"Content-Type": "application/json"},
+                timeout=aiohttp.ClientTimeout(total=30),
+            ) as response:
+                response.raise_for_status()
+                data = await response.json()
+                return data.get("data", {}).get("markdown")
     except Exception as e:
         print(f"Error scraping page content: {e}")
         return None
