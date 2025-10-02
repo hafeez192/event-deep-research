@@ -216,16 +216,27 @@ The project uses several configuration files:
 
 ```json
 {
-  "existing_events": {
-    "early": "Albert Einstein was born on March 14, 1879, in Ulm, Germany...",
-    "personal": "Einstein married Mileva Marić in 1903, and they had three children...",
-    "career": "In 1905, Einstein published four groundbreaking papers...",
-    "legacy": "Einstein's work revolutionized physics and our understanding of the universe..."
-  },
-  "used_domains": [
-    "en.wikipedia.org",
-    "www.britannica.com",
-    "www.nobelprize.org"
+  "structured_events": [
+    {
+      "name": "Birth of Albert Einstein",
+      "description": "Albert Einstein was born in Ulm, Germany.",
+      "date": {
+        "year": 1879,
+        "note": ""
+      },
+      "location": "Ulm, Germany",
+      "id": "time-1879-03-14T00:00:00Z"
+    },
+    {
+      "name": "Einstein's Family Moves to Munich",
+      "description": "Albert Einstein moved with his family to Munich.",
+      "date": {
+        "year": 1880,
+        "note": ""
+      },
+      "location": "Munich, Germany",
+      "id": "time-1880-03-14T00:00:00Z"
+    }
   ]
 }
 ```
