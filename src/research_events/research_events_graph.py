@@ -5,6 +5,7 @@ from langchain_tavily import TavilySearch
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 from pydantic import BaseModel, Field
+from src.configuration import Configuration
 from src.llm_service import model_for_structured
 from src.research_events.merge_events.merge_events_graph import merge_events_app
 from src.state import CategoriesWithEvents
@@ -203,6 +204,7 @@ research_events_builder = StateGraph(
     ResearchEventsState,
     input_schema=InputResearchEventsState,
     output_schema=OutputResearchEventsState,
+    config_schema=Configuration,
 )
 
 # Add all the nodes to the graph

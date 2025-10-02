@@ -3,6 +3,7 @@ from typing import Literal, TypedDict
 from langgraph.graph import START, StateGraph
 from langgraph.graph.state import Command
 from langgraph.pregel.main import asyncio
+from src.configuration import Configuration
 from src.llm_service import model_for_structured
 from src.research_events.merge_events.prompts import (
     MERGE_EVENTS_TEMPLATE,
@@ -153,8 +154,7 @@ async def combine_new_and_original_events(state: MergeEventsState) -> Command:
 
 
 merge_events_graph_builder = StateGraph(
-    MergeEventsState,
-    input_schema=InputMergeEventsState,
+    MergeEventsState, input_schema=InputMergeEventsState, config_schema=Configuration
 )
 
 merge_events_graph_builder.add_node(

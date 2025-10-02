@@ -1,22 +1,7 @@
-from langchain_core.messages import MessageLikeRepresentation
+import os
+
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
-from src.llm_service import model_for_structured
-from src.prompts import create_messages_summary_prompt
-from src.state import SupervisorState
-
-
-async def create_messages_summary(
-    state: SupervisorState, new_messages: list[MessageLikeRepresentation]
-) -> str:
-    previous_messages_summary = state.get("conversation_summary", "")
-    """Create a summary of the messages."""
-    prompt = create_messages_summary_prompt.format(
-        new_messages=new_messages,
-        previous_messages_summary=previous_messages_summary,
-    )
-
-    response = await model_for_structured.ainvoke(prompt)
-    return response.content
 
 
 @tool(
@@ -40,3 +25,16 @@ def think_tool(reflection: str) -> str:
     # The return value is crucial. It becomes the ToolMessage the LLM sees next.
     # By explicitly telling it what to do, we break the loop.
     return f"Reflection recorded. {reflection}"
+
+
+def get_api_key_for_model(model_name: str, config: RunnableConfig):
+    """Get API key for a specific model from environment or config."""
+    model_name = model_name.lower()
+
+    if model_name.startswith("openai:"):
+        return os.getenv("OPENAI_API_KEY")
+    elif model_name.startswith("anthropic:"):
+        return os.getenv("ANTHROPIC_API_KEY")
+    elif model_name.startswith("google"):
+        return os.getenv("GOOGLE_API_KEY")
+    return None

@@ -1,11 +1,13 @@
 from typing import Literal
 
-from langchain_core.messages import ToolMessage
+from langchain_core.messages import MessageLikeRepresentation, ToolMessage
+from langchain_core.runnables import RunnableConfig
 from langfuse import get_client
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
-from src.llm_service import model_for_structured, model_for_tools
+from src.llm_service import create_tools_model, model_for_structured
 from src.prompts import (
+    create_messages_summary_prompt,
     events_summarizer_prompt,
     lead_researcher_prompt,
     structure_events_prompt,
@@ -19,7 +21,7 @@ from src.state import (
     SupervisorState,
     SupervisorStateInput,
 )
-from src.utils import create_messages_summary, think_tool
+from src.utils import think_tool
 
 langfuse = get_client()
 
@@ -33,27 +35,46 @@ langfuse = get_client()
 MAX_TOOL_CALL_ITERATIONS = 7
 
 
-async def supervisor_node(
-    state: SupervisorState,
-) -> Command[Literal["supervisor_tools"]]:
-    """The 'brain' of the agent. It decides the next action."""
-    prompt = lead_researcher_prompt.format(
-        person_to_research=state["person_to_research"],
-        events_summary=state.get("events_summary", ""),
-        messages_summary=state.get("conversation_summary", ""),
-        max_iterations=5,
+async def create_messages_summary(
+    state: SupervisorState, new_messages: list[MessageLikeRepresentation]
+) -> str:
+    previous_messages_summary = state.get("conversation_summary", "")
+    """Create a summary of the messages."""
+    prompt = create_messages_summary_prompt.format(
+        new_messages=new_messages,
+        previous_messages_summary=previous_messages_summary,
     )
 
+    response = await model_for_structured.ainvoke(prompt)
+    return response.content
+
+
+async def supervisor_node(
+    state: SupervisorState,
+    config: RunnableConfig,
+) -> Command[Literal["supervisor_tools"]]:
+    """The 'brain' of the agent. It decides the next action."""
     tools = [
         ResearchEventsTool,
         FinishResearchTool,
         think_tool,
     ]
-    llm_with_tools = model_for_tools.bind_tools(tools)
 
-    prompt = [("system", prompt)]
+    tools_model = create_tools_model(tools=tools, config=config)
 
-    response = await llm_with_tools.ainvoke(prompt)
+    prompt = [
+        (
+            "system",
+            lead_researcher_prompt.format(
+                person_to_research=state["person_to_research"],
+                events_summary=state.get("events_summary", ""),
+                messages_summary=state.get("conversation_summary", ""),
+                max_iterations=5,
+            ),
+        )
+    ]
+
+    response = await tools_model.ainvoke(prompt)
 
     conversation_summary = await create_messages_summary(state, [response])
 

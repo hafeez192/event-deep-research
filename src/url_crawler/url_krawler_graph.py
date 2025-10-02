@@ -6,6 +6,7 @@ from langfuse.langchain import CallbackHandler
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 from pydantic import BaseModel, Field
+from src.configuration import Configuration
 from src.llm_service import model_for_structured, model_for_tools
 from src.url_crawler.prompts import (
     EXTRACT_EVENTS_PROMPT,
@@ -215,7 +216,10 @@ async def create_event_list_from_chunks(
 
 
 builder = StateGraph(
-    UrlCrawlerState, input_schema=InputUrlCrawlerState, output_schema=UrlCrawlerState
+    UrlCrawlerState,
+    input_schema=InputUrlCrawlerState,
+    output_schema=UrlCrawlerState,
+    config_schema=Configuration,
 )
 
 builder.add_node("scrape_content", scrape_content)
