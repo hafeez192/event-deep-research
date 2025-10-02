@@ -338,9 +338,6 @@ This project was inspired by and builds upon several amazing open-source project
 - [Open Deep Research](https://github.com/langchain-ai/open_deep_research) by LangChain - For inspiration on deep research methodologies
 - [LangChain](https://github.com/langchain-ai/langchain) - For the foundational LLM framework
 - [LangGraph](https://github.com/langchain-ai/langgraph) - For the multi-agent orchestration capabilities
-- [Firecrawl](https://firecrawl.dev/) - For advanced web scraping capabilities
-- [Tavily](https://tavily.com/) - For intelligent web search
-- [Langfuse](https://langfuse.com/) - For LLM observability and monitoring
 
 Special thanks to the open-source community for making this project possible!
 
