@@ -22,3 +22,6 @@ backend/src/data/*
 
 
 src/data/*
+
+.langgraph_api/*
+.pytest_cache/*
