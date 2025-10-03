@@ -1,8 +1,12 @@
 from typing import Literal
 
-from langchain_core.messages import MessageLikeRepresentation, ToolMessage
+from langchain_core.messages import (
+    HumanMessage,
+    MessageLikeRepresentation,
+    SystemMessage,
+    ToolMessage,
+)
 from langchain_core.runnables import RunnableConfig
-from langfuse import get_client
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 from src.configuration import Configuration
@@ -30,13 +34,12 @@ from src.utils import think_tool
 config = Configuration()
 MAX_TOOL_CALL_ITERATIONS = config.max_tool_iterations
 
-# Lazy initialization to avoid blocking calls
-def get_langfuse_client():
-    return get_client()
 
 def get_langfuse_handler():
     from langfuse.langchain import CallbackHandler
+
     return CallbackHandler()
+
 
 # Verify connection
 # if langfuse.auth_check():
@@ -74,20 +77,22 @@ async def supervisor_node(
 
     tools_model = create_tools_model(tools=tools, config=config)
 
-    prompt = [
-        (
-            "system",
-            lead_researcher_prompt.format(
-                person_to_research=state["person_to_research"],
-                events_summary=state.get("events_summary", ""),
-                messages_summary=state.get("conversation_summary", ""),
-                max_iterations=5,
-            ),
+    system_message = SystemMessage(
+        content=lead_researcher_prompt.format(
+            person_to_research=state["person_to_research"],
+            events_summary=state.get("events_summary", ""),
+            messages_summary=state.get("conversation_summary", ""),
+            max_iterations=5,
         )
-    ]
+    )
 
+    human_message = HumanMessage(content="Start the research process.")
+    prompt = [system_message, human_message]
+
+    print("PROMPT", prompt)
     response = await tools_model.ainvoke(prompt)
 
+    print("RESPONSE", response)
     conversation_summary = await create_messages_summary(state, [response], config)
 
     # The output is an AIMessage with tool_calls, which we add to the history

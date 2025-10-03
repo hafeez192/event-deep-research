@@ -2,29 +2,81 @@ import os
 from typing import Any
 
 from langchain_core.runnables import RunnableConfig
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Configuration(BaseModel):
     """Main configuration class for the Deep Research agent."""
 
-    structured_llm_model: str = "ollama:mistral-nemo:latest"
+    # Single model for most providers (simplified configuration)
+    llm_model: str = Field(
+        # default="",
+        default="google_genai:gemini-2.5-flash-lite",
+        description="Primary LLM model to use for both structured output and tools (except Ollama)",
+    )
 
-    tools_llm_model: str = "ollama:gpt-oss:20b"
+    # Optional overrides for Ollama users (due to gpt-oss structured output bug)
+    structured_llm_model: str | None = Field(
+        default=None,
+        # default="ollama:mistral-nemo:latest",
+        description="Override model for structured output (mainly for Ollama users)",
+    )
+    tools_llm_model: str | None = Field(
+        default=None,
+        # default="ollama:gpt-oss:20b",
+        description="Override model for tools (mainly for Ollama users)",
+    )
 
-    structured_llm_max_tokens: int = 4096
+    structured_llm_max_tokens: int = Field(
+        default=4096, description="Maximum tokens for structured output model"
+    )
+    tools_llm_max_tokens: int = Field(
+        default=4096, description="Maximum tokens for tools model"
+    )
 
-    tools_llm_max_tokens: int = 4096
+    # API Keys for different providers
+    openai_api_key: str | None = Field(default=None, description="OpenAI API key")
+    anthropic_api_key: str | None = Field(default=None, description="Anthropic API key")
+    google_api_key: str | None = Field(default=None, description="Google AI API key")
 
-    max_structured_output_retries: int = 3
-
-    max_tools_output_retries: int = 3
+    max_structured_output_retries: int = Field(
+        default=3, description="Maximum retry attempts for structured output"
+    )
+    max_tools_output_retries: int = Field(
+        default=3, description="Maximum retry attempts for tool calls"
+    )
 
     # Hardcoded values from graph files
-    default_chunk_size: int = 800
-    default_overlap_size: int = 20
-    max_content_length: int = 100000
-    max_tool_iterations: int = 7
+    default_chunk_size: int = Field(
+        default=800, description="Default chunk size for text processing"
+    )
+    default_overlap_size: int = Field(
+        default=20, description="Default overlap size between chunks"
+    )
+    max_content_length: int = Field(
+        default=100000, description="Maximum content length to process"
+    )
+    max_tool_iterations: int = Field(
+        default=7, description="Maximum number of tool iterations"
+    )
+
+    def get_effective_structured_model(self) -> str:
+        """Get the effective structured model, using overrides if provided."""
+        if self.structured_llm_model:
+            return self.structured_llm_model
+        # For Ollama, use different models due to gpt-oss structured output bug
+        if self.llm_model.startswith("ollama:"):
+            return "ollama:mistral-nemo:latest"
+        return self.llm_model
+
+    def get_effective_tools_model(self) -> str:
+        """Get the effective tools model, using overrides if provided."""
+        if self.tools_llm_model:
+            return self.tools_llm_model
+        # For Ollama, use different models due to gpt-oss structured output bug
+        if self.llm_model.startswith("ollama:"):
+            return "ollama:gpt-oss:20b"
+        return self.llm_model
 
     @classmethod
     def from_runnable_config(

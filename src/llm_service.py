@@ -42,7 +42,7 @@ def create_tools_model(tools: List[Type[BaseTool]], config: RunnableConfig) -> R
     return _build_and_configure_model(
         config=config,
         model_chain=model_with_tools,
-        model_name=configurable.tools_llm_model,
+        model_name=configurable.get_effective_tools_model(),
         max_tokens=configurable.tools_llm_max_tokens,
         max_retries=configurable.max_tools_output_retries,
     )
@@ -64,7 +64,7 @@ def create_structured_model(
     return _build_and_configure_model(
         config=config,
         model_chain=base_model,
-        model_name=configurable.structured_llm_model,
+        model_name=configurable.get_effective_structured_model(),
         max_tokens=configurable.structured_llm_max_tokens,
         max_retries=configurable.max_structured_output_retries,
     )

@@ -90,7 +90,7 @@ cp .env.example .env
 # Edit .env with your API keys:
 # - FIRECRAWL_API_KEY (required)
 # - TAVILY_API_KEY (required)
-# - OPENAI_API_KEY or GOOGLE_API_KEY (optional, for LLM)
+# - OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_API_KEY (optional, for LLM)
 
 # 4. Run tests to verify setup
 make test
@@ -100,12 +100,51 @@ make dev
 # Open http://localhost:2024 to access LangGraph Studio
 ```
 
+### Model Configuration
+
+The project supports multiple LLM providers with simplified configuration. Set a single `LLM_MODEL` environment variable in your `.env` file:
+
+**Supported Model Formats:**
+- `openai:gpt-4o` - OpenAI GPT models
+- `anthropic:claude-3-5-sonnet-20241022` - Anthropic Claude models  
+- `google:gemini-1.5-pro` - Google Gemini models
+- `ollama:mistral-nemo:latest` - Local Ollama models
+
+**Example `.env` Configuration:**
+```bash
+# Use OpenAI (single model works for both structured output and tools)
+LLM_MODEL="openai:gpt-4o"
+OPENAI_API_KEY="your-openai-api-key"
+
+# Use Google (single model works for both structured output and tools)
+LLM_MODEL="google:gemini-1.5-pro"
+GOOGLE_API_KEY="your-google-api-key"
+
+# Use Anthropic (single model works for both structured output and tools)
+LLM_MODEL="anthropic:claude-3-5-sonnet-20241022"
+ANTHROPIC_API_KEY="your-anthropic-api-key"
+
+# Use Ollama (automatically handles dual models due to gpt-oss structured output bug)
+LLM_MODEL="ollama:mistral-nemo:latest"
+# Optional: Override the automatic dual model selection
+# STRUCTURED_LLM_MODEL="ollama:mistral-nemo:latest"
+# TOOLS_LLM_MODEL="ollama:gpt-oss:20b"
+```
+
+**Default values** (if not set in environment):
+- `LLM_MODEL="ollama:mistral-nemo:latest"`
+- For Ollama: automatically uses `mistral-nemo` for structured output and `gpt-oss` for tools
+
 ### API Keys Setup
 
 You'll need these free API keys:
 - **[Firecrawl](https://firecrawl.dev/)** - Web scraping (get free API key)
 - **[Tavily](https://tavily.com/)** - Web search (get free API key)
-- **OpenAI/Google** - Optional LLM providers
+- **LLM Provider** (choose one or more):
+  - **[OpenAI](https://platform.openai.com/)** - GPT models
+  - **[Anthropic](https://console.anthropic.com/)** - Claude models
+  - **[Google AI](https://aistudio.google.com/)** - Gemini models
+  - **Ollama** - Local models (no API key needed)
 
 ## 🧪 Testing
 
@@ -157,6 +196,8 @@ uv run pytest -v -m llm
   ]
 }
 ```
+
+
 
 ![Langgraph Studio Graph](images/kronologs-lgstudiograph.webp)
 

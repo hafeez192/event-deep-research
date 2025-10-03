@@ -18,8 +18,6 @@ from src.url_crawler.utils import (
     url_crawl,
 )
 
-from src.configuration import Configuration
-
 config = Configuration()
 CHUNK_SIZE = config.default_chunk_size
 OVERLAP_SIZE = config.default_overlap_size
@@ -235,8 +233,9 @@ builder.add_node("create_event_list", create_event_list)
 # builder.add_node("return_events", return_events)
 builder.add_edge(START, "scrape_content")
 
+
 def get_langfuse_handler():
-    from langfuse.langchain import CallbackHandler
     return CallbackHandler()
+
 
 url_crawler_app = builder.compile().with_config({"callbacks": [get_langfuse_handler()]})

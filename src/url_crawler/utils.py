@@ -1,11 +1,12 @@
 import asyncio
+import os
 import re
 from typing import List
 
 import aiohttp
 import tiktoken
 
-FIRECRAWL_API_URL = "http://localhost:3002/v0/scrape"
+FIRECRAWL_API_URL = f"{os.getenv('FIRECRAWL_API_URL')}/v0/scrape"
 
 
 async def url_crawl(url: str) -> str:
@@ -49,6 +50,7 @@ def remove_markdown_links(markdown_text):
 
 # Global tokenizer cache to avoid repeated loading
 _tokenizer = None
+
 
 def get_tokenizer():
     """Get the tiktoken tokenizer, loading it lazily."""

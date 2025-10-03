@@ -36,5 +36,9 @@ def get_api_key_for_model(model_name: str, config: RunnableConfig):
     elif model_name.startswith("anthropic:"):
         return os.getenv("ANTHROPIC_API_KEY")
     elif model_name.startswith("google"):
+        print("GOOGLE_API_KEY", os.getenv("GOOGLE_API_KEY"))
         return os.getenv("GOOGLE_API_KEY")
+    elif model_name.startswith("ollama:"):
+        # Ollama doesn't need API key
+        return None
     return None
