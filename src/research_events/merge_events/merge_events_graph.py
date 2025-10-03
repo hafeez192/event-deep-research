@@ -7,40 +7,14 @@ from langgraph.pregel.main import asyncio
 from pydantic import BaseModel, Field
 from src.configuration import Configuration
 from src.llm_service import create_tools_model
-from src.research_events.merge_events.prompts import MERGE_EVENTS_TEMPLATE
+from src.research_events.merge_events.prompts import (
+    EXTRACT_AND_CATEGORIZE_PROMPT,
+    MERGE_EVENTS_TEMPLATE,
+)
 from src.research_events.merge_events.utils import ensure_categories_with_events
 from src.services.event_service import EventService
 from src.state import CategoriesWithEvents
 from src.url_crawler.utils import chunk_text_by_tokens
-
-EXTRACT_AND_CATEGORIZE_PROMPT = """
-You are a Biographical Event Extractor and Categorizer. Your task is to analyze text chunks for events related to: **"{research_question}"**
-
-<Available Tools>
-- `IrrelevantChunk` (use if the text contains NO biographical events relevant to the research question)
-- `RelevantEventsCategorized` (use if the text contains relevant events - categorize them into the 4 categories)
-</Available Tools>
-
-<Categories>
-early: Covers childhood, upbringing, family, education, and early influences that shaped the author.
-personal: Focuses on relationships, friendships, family life, places of residence, and notable personal traits or beliefs.
-career: Details their professional journey: first steps into writing, major publications, collaborations, recurring themes, style, and significant milestones.
-legacy: Explains how their work was received, awards or recognition, cultural/literary impact, influence on other authors, and how they are remembered today.
-</Categories>
-
-**EXTRACTION RULES**:
-- Extract COMPLETE sentences with all details (dates, names, locations, context)
-- Do NOT summarize or abbreviate any information
-- Include only events directly relevant to the research question
-- Maintain chronological order within each category
-- Format as clean bullet points (e.g., "- Event description with date and location.")
-
-<Text to Analyze>
-{text_chunk}
-</Text to Analyze>
-
-You must call exactly one of the provided tools. Do not respond with plain text.
-"""
 
 
 class RelevantEventsCategorized(BaseModel):
@@ -95,7 +69,7 @@ async def split_events(
             update={"text_chunks": [], "categorized_chunks": []},
         )
 
-    chunks = await chunk_text_by_tokens(extracted_events[0:2000])
+    chunks = await chunk_text_by_tokens(extracted_events)
 
     return Command(
         goto="extract_and_categorize_chunk",
@@ -132,6 +106,8 @@ async def extract_and_categorize_chunk(
         and response.tool_calls[0]["name"] == "RelevantEventsCategorized"
     ):
         categorized_data = response.tool_calls[0]["args"]
+        # Convert any list values to strings
+        categorized_data = {k: "\n".join(v) if isinstance(v, list) else v for k, v in categorized_data.items()}
         categorized = CategoriesWithEvents(**categorized_data)
     else:
         categorized = CategoriesWithEvents(early="", personal="", career="", legacy="")
