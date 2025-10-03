@@ -4,6 +4,15 @@
 
 ![Agent Graph](images/kronologs-graph.webp)
 
+## ✨ Features
+
+- **🔍 Automated Biographical Research** - Input any historical figure and get comprehensive event timelines
+- **🕷️ Intelligent Web Crawling** - Automatically discovers and extracts information from multiple sources
+- **📊 Structured Event Extraction** - Converts unstructured web content into clean, chronological JSON timelines
+- **🤖 Multi-Agent Coordination** - Specialized agents work together to research, crawl, and merge data
+- **🎯 Real-Time Visualization** - Watch the AI agents work through LangGraph Studio's interactive interface
+- **🔧 Flexible LLM Support** - Works with OpenAI, Anthropic, Google, or local Ollama models
+
 ## 🎯 What You'll Learn
 
 This project demonstrates advanced AI agent patterns and techniques:
@@ -42,7 +51,7 @@ make dev
 
 ```json
 {
-  "person_to_research": "Marie Curie"
+  "person_to_research": "Albert Einstein"
 }
 ```
 
@@ -52,11 +61,39 @@ make dev
 {
   "structured_events": [
     {
-      "name": "Birth in Warsaw",
-      "description": "Born Maria Skłodowska in Warsaw, Poland",
-      "date": {"year": 1867, "note": ""},
-      "location": "Warsaw, Poland",
-      "id": "time-1867-11-07T00:00:00Z"
+      "name": "Birth in Ulm",
+      "description": "Albert Einstein was born in Ulm, Germany to Hermann and Pauline Einstein",
+      "date": {"year": 1879, "note": "March 14"},
+      "location": "Ulm, German Empire",
+      "id": "time-1879-03-14T00:00:00Z"
+    },
+    {
+      "name": "Zurich Polytechnic",
+      "description": "Entered the Swiss Federal Polytechnic School in Zurich to study physics and mathematics",
+      "date": {"year": 1896, "note": ""},
+      "location": "Zurich, Switzerland",
+      "id": "time-1896-01-01T00:00:00Z"
+    },
+    {
+      "name": "Miracle Year Papers",
+      "description": "Published four groundbreaking papers on photoelectric effect, Brownian motion, special relativity, and mass-energy equivalence",
+      "date": {"year": 1905, "note": ""},
+      "location": "Bern, Switzerland",
+      "id": "time-1905-01-01T00:00:00Z"
+    },
+    {
+      "name": "Nobel Prize in Physics",
+      "description": "Awarded Nobel Prize for his discovery of the law of the photoelectric effect",
+      "date": {"year": 1921, "note": ""},
+      "location": "Stockholm, Sweden",
+      "id": "time-1921-01-01T00:00:00Z"
+    },
+    {
+      "name": "Death in Princeton",
+      "description": "Albert Einstein died at Princeton Hospital after refusing surgery for an abdominal aortic aneurysm",
+      "date": {"year": 1955, "note": "April 18"},
+      "location": "Princeton, New Jersey, USA",
+      "id": "time-1955-04-18T00:00:00Z"
     }
   ]
 }
@@ -200,36 +237,6 @@ uv run pytest -v -m llm
 
 ![Langgraph Studio Graph](images/kronologs-lgstudiograph.webp)
 
-## 🏗️ Architecture
-
-### Multi-Agent System
-
-```
-┌─────────────────┐
-│   Supervisor    │ ← Orchestrates the entire research process
-└─────────┬───────┘
-          │
-    ┌─────┴─────┐
-    │           │
-┌───▼───┐   ┌───▼────┐
-│Search │   │Crawler │ ← Finds sources & extracts content
-│Agent  │   │Agent   │
-└───────┘   └───┬────┘
-                │
-            ┌───▼────┐
-            │Merge   │ ← Combines & deduplicates events
-            │Agent   │
-            └────────┘
-```
-
-### Key Patterns You'll Learn
-
-- **Supervisor Pattern** - Central coordination of specialized agents
-- **State Management** - TypedDict-based state passing between agents
-- **Error Handling** - Graceful failure recovery with `@with_error_handling`
-- **Async Workflows** - Non-blocking agent communication
-- **Context Engineering** - Prompt optimization for structured extraction
-
 ## 📁 Project Structure
 
 ```
@@ -240,6 +247,8 @@ src/
 ├── url_crawler/          # Web scraping agents
 └── state.py             # TypedDict state definitions
 ```
+
+
 
 See the [open issues](https://github.com/bernatsampera/deep-event-research/issues) for a full list of proposed features and known issues.
 
