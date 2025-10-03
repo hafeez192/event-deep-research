@@ -10,20 +10,20 @@ class Configuration(BaseModel):
 
     # Single model for most providers (simplified configuration)
     llm_model: str = Field(
-        # default="",
-        default="google_genai:gemini-2.5-flash-lite",
+        default="",
+        # default="google_genai:gemini-2.5-flash-lite",
         description="Primary LLM model to use for both structured output and tools (except Ollama)",
     )
 
     # Optional overrides for Ollama users (due to gpt-oss structured output bug)
     structured_llm_model: str | None = Field(
-        default=None,
-        # default="ollama:mistral-nemo:latest",
+        # default=None,
+        default="ollama:mistral-nemo:latest",
         description="Override model for structured output (mainly for Ollama users)",
     )
     tools_llm_model: str | None = Field(
-        default=None,
-        # default="ollama:gpt-oss:20b",
+        # default=None,
+        default="ollama:gpt-oss:20b",
         description="Override model for tools (mainly for Ollama users)",
     )
 
@@ -57,7 +57,7 @@ class Configuration(BaseModel):
         default=100000, description="Maximum content length to process"
     )
     max_tool_iterations: int = Field(
-        default=7, description="Maximum number of tool iterations"
+        default=3, description="Maximum number of tool iterations"
     )
 
     def get_effective_structured_model(self) -> str:
