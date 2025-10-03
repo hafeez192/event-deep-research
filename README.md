@@ -1,6 +1,14 @@
 # 🕵️ Deep Event Research
 
-> An intelligent AI agent that automatically discovers, extracts, and compiles biographical events of historical figures using multi-agent orchestration.
+**The Problem**
+In many old books there are small chronologies of the life events of authors and other relevant historical figures. But each of these
+chronologies are in specific books, they are not easy to find.
+
+**The Solution**
+AI agents automatically discover sources, extract events, and compile structured JSON timelines in seconds.
+
+**Key Highlights**
+Multi-agent system with intelligent crawling, real-time visualization, and support for OpenAI, Anthropic, Google, or Ollama models.
 
 ![Agent Graph](images/kronologs-graph.webp)
 
@@ -247,8 +255,6 @@ src/
 ├── url_crawler/          # Web scraping agents
 └── state.py             # TypedDict state definitions
 ```
-
-
 
 See the [open issues](https://github.com/bernatsampera/deep-event-research/issues) for a full list of proposed features and known issues.
 

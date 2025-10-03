@@ -104,6 +104,7 @@ async def test_research_events_with_mocked_llm(
             "research_events.research_events_graph.merge_events_app"
         ) as mock_merger_patch,
         patch("research_events.research_events_graph.TavilySearch") as mock_tavily,
+        patch("research_events.research_events_graph.create_structured_model") as mock_llm,
     ):
         # Configure the mocks
         mock_crawler_patch.ainvoke = mock_url_crawler(mock_extracted_events).ainvoke
@@ -115,6 +116,11 @@ async def test_research_events_with_mocked_llm(
         mock_tavily_instance = Mock()
         mock_tavily_instance.invoke.return_value = {"results": []}
         mock_tavily.return_value = mock_tavily_instance
+
+        # Mock the structured LLM to return a test URL
+        mock_llm_instance = Mock()
+        mock_llm_instance.invoke.return_value = Mock(selected_urls=["https://example.com/test"])
+        mock_llm.return_value = mock_llm_instance
 
         result = await research_events_app.ainvoke(sample_input_state)
 

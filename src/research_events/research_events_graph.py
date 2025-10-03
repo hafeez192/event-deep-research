@@ -147,11 +147,6 @@ async def crawl_url(
     if not research_question:
         raise ValueError("research_question is required for url crawling")
 
-    # return Command(
-    #     goto="merge_events_and_update",
-    #     update={"extracted_events": "extracted_events mock"},
-    # )
-
     # Invoke the crawler subgraph
     result = await url_crawler_app.ainvoke(
         {"url": url_to_process, "research_question": research_question}
@@ -170,12 +165,14 @@ async def merge_events_and_update(
     """Merges new events, removes the processed URL, and loops back to the router."""
     existing_events = state.get("existing_events", CategoriesWithEvents())
     extracted_events = state.get("extracted_events", "")
+    research_question = state.get("research_question", "")
 
     # Invoke the merge subgraph
     result = await merge_events_app.ainvoke(
         {
             "existing_events": existing_events,
             "extracted_events": extracted_events,
+            "research_question": research_question,
         }
     )
 
