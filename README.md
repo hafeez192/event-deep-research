@@ -39,6 +39,7 @@ make dev
 ## 🔄 How It Works
 
 **Input:**
+
 ```json
 {
   "person_to_research": "Marie Curie"
@@ -46,6 +47,7 @@ make dev
 ```
 
 **Output:**
+
 ```json
 {
   "structured_events": [
@@ -71,6 +73,7 @@ make dev
 ## 🚀 Installation
 
 ### Prerequisites
+
 - **Python 3.12+**
 - **uv** (Python package manager)
 
@@ -92,10 +95,7 @@ cp .env.example .env
 # - TAVILY_API_KEY (required)
 # - OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_API_KEY (optional, for LLM)
 
-# 4. Run tests to verify setup
-make test
-
-# 5. Start the development server
+# 4. Start the development server
 make dev
 # Open http://localhost:2024 to access LangGraph Studio
 ```
@@ -105,12 +105,14 @@ make dev
 The project supports multiple LLM providers with simplified configuration. Set a single `LLM_MODEL` environment variable in your `.env` file:
 
 **Supported Model Formats:**
+
 - `openai:gpt-4o` - OpenAI GPT models
-- `anthropic:claude-3-5-sonnet-20241022` - Anthropic Claude models  
+- `anthropic:claude-3-5-sonnet-20241022` - Anthropic Claude models
 - `google:gemini-1.5-pro` - Google Gemini models
 - `ollama:mistral-nemo:latest` - Local Ollama models
 
 **Example `.env` Configuration:**
+
 ```bash
 # Use OpenAI (single model works for both structured output and tools)
 LLM_MODEL="openai:gpt-4o"
@@ -132,12 +134,14 @@ LLM_MODEL="ollama:mistral-nemo:latest"
 ```
 
 **Default values** (if not set in environment):
+
 - `LLM_MODEL="ollama:mistral-nemo:latest"`
 - For Ollama: automatically uses `mistral-nemo` for structured output and `gpt-oss` for tools
 
 ### API Keys Setup
 
 You'll need these free API keys:
+
 - **[Firecrawl](https://firecrawl.dev/)** - Web scraping (get free API key)
 - **[Tavily](https://tavily.com/)** - Web search (get free API key)
 - **LLM Provider** (choose one or more):
@@ -149,9 +153,6 @@ You'll need these free API keys:
 ## 🧪 Testing
 
 ```bash
-# Run all tests (mocked, no API calls)
-make test
-
 # Run specific test
 uv run pytest src/test/test_research_events.py::test_research_events_with_mocked_llm -v
 
@@ -177,7 +178,7 @@ uv run pytest -v -m llm
 ### What the Agents Do
 
 1. **🔍 Research Agent** - Finds relevant biographical sources
-2. **🕷️ URL Crawler** - Extracts content from web pages  
+2. **🕷️ URL Crawler** - Extracts content from web pages
 3. **📊 Merge Agent** - Combines and deduplicates events
 4. **🎯 Supervisor** - Coordinates the entire workflow
 
@@ -196,8 +197,6 @@ uv run pytest -v -m llm
   ]
 }
 ```
-
-
 
 ![Langgraph Studio Graph](images/kronologs-lgstudiograph.webp)
 
@@ -259,15 +258,6 @@ We welcome contributions! This is a great project to learn:
 ### Development Commands
 
 ```bash
-# Lint code
-uv run ruff check src/
-
-# Format code  
-uv run ruff format src/
-
-# Run tests
-make test
-
 # Start dev server
 make dev
 ```
