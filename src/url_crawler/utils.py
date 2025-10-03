@@ -1,3 +1,4 @@
+import asyncio
 import re
 from typing import List
 
@@ -46,14 +47,26 @@ def remove_markdown_links(markdown_text):
     return re.sub(r"\[(.*?)\]\(.*?\)", r"\1", markdown_text)
 
 
-def chunk_text_by_tokens(
+# Global tokenizer cache to avoid repeated loading
+_tokenizer = None
+
+def get_tokenizer():
+    """Get the tiktoken tokenizer, loading it lazily."""
+    global _tokenizer
+    if _tokenizer is None:
+        _tokenizer = tiktoken.get_encoding("cl100k_base")
+    return _tokenizer
+
+
+async def chunk_text_by_tokens(
     text: str, chunk_size: int = 2000, overlap_size: int = 20
 ) -> List[str]:
     """Splits text into token-based, overlapping chunks."""
     if not text:
         return []
 
-    encoding = tiktoken.get_encoding("cl100k_base")
+    # Load tokenizer in a thread to avoid blocking
+    encoding = await asyncio.to_thread(get_tokenizer)
     tokens = encoding.encode(text)
     print("--- TOKENS ---")
     print(len(tokens))
@@ -76,9 +89,8 @@ def chunk_text_by_tokens(
     return chunks
 
 
-tokenizer = tiktoken.get_encoding("cl100k_base")
-
-
-def count_tokens(messages: List[str]) -> int:
+async def count_tokens(messages: List[str]) -> int:
     """Counts the total tokens in a list of messages."""
-    return sum(len(tokenizer.encode(msg)) for msg in messages)
+    # Load tokenizer in a thread to avoid blocking
+    encoding = await asyncio.to_thread(get_tokenizer)
+    return sum(len(encoding.encode(msg)) for msg in messages)

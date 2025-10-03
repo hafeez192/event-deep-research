@@ -18,9 +18,12 @@ from src.url_crawler.utils import (
     url_crawl,
 )
 
-CHUNK_SIZE = 800
-OVERLAP_SIZE = 20
-MAX_CONTENT_LENGTH = 100000
+from src.configuration import Configuration
+
+config = Configuration()
+CHUNK_SIZE = config.default_chunk_size
+OVERLAP_SIZE = config.default_overlap_size
+MAX_CONTENT_LENGTH = config.max_content_length
 
 # CHUNK_SIZE = 40
 # OVERLAP_SIZE = 0
@@ -95,7 +98,7 @@ async def chunk_content(
     print("--- Splitting content into chunks ---")
     content = state.get("raw_scraped_content", "")
 
-    text_chunks = chunk_text_by_tokens(
+    text_chunks = await chunk_text_by_tokens(
         content, chunk_size=CHUNK_SIZE, overlap_size=OVERLAP_SIZE
     )
 
@@ -232,6 +235,8 @@ builder.add_node("create_event_list", create_event_list)
 # builder.add_node("return_events", return_events)
 builder.add_edge(START, "scrape_content")
 
-langfuse_handler = CallbackHandler()
+def get_langfuse_handler():
+    from langfuse.langchain import CallbackHandler
+    return CallbackHandler()
 
-url_crawler_app = builder.compile().with_config({"callbacks": [langfuse_handler]})
+url_crawler_app = builder.compile().with_config({"callbacks": [get_langfuse_handler()]})

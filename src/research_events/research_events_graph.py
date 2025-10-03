@@ -1,5 +1,4 @@
 from typing import Literal, TypedDict
-from urllib.parse import urlparse
 
 from langchain_tavily import TavilySearch
 from langgraph.graph import END, START, StateGraph
@@ -9,6 +8,7 @@ from pydantic import BaseModel, Field
 from src.configuration import Configuration
 from src.llm_service import create_structured_model
 from src.research_events.merge_events.merge_events_graph import merge_events_app
+from src.services.url_service import URLService
 from src.state import CategoriesWithEvents
 from src.url_crawler.url_krawler_graph import url_crawler_app
 
@@ -104,19 +104,10 @@ def url_finder(
 def updateUrlList(
     state: ResearchEventsState,
 ) -> tuple[list[str], list[str]]:
-    # Pop the first URL (removes it from the list and returns it)
-    url = state.get("urls", []).pop(0)
-
-    # Extract domain safely
-    domain = urlparse(url).netloc
-
-    # Track used domains
+    urls = state.get("urls", [])
     used_domains = state.get("used_domains", [])
-    used_domains.append(domain)
-
-    remaining_urls = state["urls"]  # Go back to the router to check for more URLs
-
-    return remaining_urls, used_domains
+    
+    return URLService.update_url_list(urls, used_domains)
 
 
 def should_process_url_router(
@@ -126,7 +117,7 @@ def should_process_url_router(
     used_domains = state.get("used_domains", [])
 
     if urls and len(urls) > 0:
-        domain = urlparse(urls[0]).netloc
+        domain = URLService.extract_domain(urls[0])
         if domain in used_domains:
             # remove first url
             remaining_urls = urls[1:]
@@ -218,10 +209,10 @@ research_events_builder.add_node("merge_events_and_update", merge_events_and_upd
 # Set the entry point
 research_events_builder.add_edge(START, "url_finder")
 
-from langfuse.langchain import CallbackHandler
-
-langfuse_handler = CallbackHandler()
+def get_langfuse_handler():
+    from langfuse.langchain import CallbackHandler
+    return CallbackHandler()
 
 research_events_app = research_events_builder.compile().with_config(
-    {"callbacks": [langfuse_handler]}
+    {"callbacks": [get_langfuse_handler()]}
 )

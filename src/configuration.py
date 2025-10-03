@@ -10,7 +10,7 @@ class Configuration(BaseModel):
 
     structured_llm_model: str = "ollama:mistral-nemo:latest"
 
-    tools_llm_model: str = "ollama:qwen3:14b"
+    tools_llm_model: str = "ollama:gpt-oss:20b"
 
     structured_llm_max_tokens: int = 4096
 
@@ -19,6 +19,12 @@ class Configuration(BaseModel):
     max_structured_output_retries: int = 3
 
     max_tools_output_retries: int = 3
+
+    # Hardcoded values from graph files
+    default_chunk_size: int = 800
+    default_overlap_size: int = 20
+    max_content_length: int = 100000
+    max_tool_iterations: int = 7
 
     @classmethod
     def from_runnable_config(

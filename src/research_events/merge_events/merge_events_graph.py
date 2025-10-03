@@ -10,6 +10,7 @@ from src.research_events.merge_events.prompts import (
     categorize_events_prompt,
 )
 from src.research_events.merge_events.utils import ensure_categories_with_events
+from src.services.event_service import EventService
 from src.state import CategoriesWithEvents
 
 
@@ -35,12 +36,7 @@ async def split_events(
 ) -> Command[Literal["categorize_chunk"]]:
     extracted_events = state.get("extracted_events", "")
 
-    # simple chunker by characters, but you could split by sentences/events
-    max_len = 2000
-    chunks = [
-        extracted_events[i : i + max_len]
-        for i in range(0, len(extracted_events), max_len)
-    ]
+    chunks = EventService.split_events_into_chunks(extracted_events)
 
     return Command(
         goto="categorize_chunk",
@@ -79,18 +75,7 @@ async def merge_categorizations(
 ) -> Command[Literal["combine_new_and_original_events"]]:
     results = state.get("chunked_events_categorized", [])
 
-    merged: CategoriesWithEvents = CategoriesWithEvents(
-        early="[]",
-        personal="[]",
-        career="[]",
-        legacy="[]",
-    )
-
-    for r in results:
-        merged.early += r.early
-        merged.personal += r.personal
-        merged.career += r.career
-        merged.legacy += r.legacy
+    merged = EventService.merge_categorized_events(results)
 
     return Command(
         goto="combine_new_and_original_events",
@@ -173,10 +158,10 @@ merge_events_graph_builder.add_node("merge_categorizations", merge_categorizatio
 
 merge_events_graph_builder.add_edge(START, "split_events")
 
-from langfuse.langchain import CallbackHandler
-
-langfuse_handler = CallbackHandler()
+def get_langfuse_handler():
+    from langfuse.langchain import CallbackHandler
+    return CallbackHandler()
 
 merge_events_app = merge_events_graph_builder.compile().with_config(
-    {"callbacks": [langfuse_handler]}
+    {"callbacks": [get_langfuse_handler()]}
 )

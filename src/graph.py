@@ -5,6 +5,7 @@ from langchain_core.runnables import RunnableConfig
 from langfuse import get_client
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
+from src.configuration import Configuration
 from src.llm_service import (
     create_structured_model,
     create_tools_model,
@@ -26,16 +27,22 @@ from src.state import (
 )
 from src.utils import think_tool
 
-langfuse = get_client()
+config = Configuration()
+MAX_TOOL_CALL_ITERATIONS = config.max_tool_iterations
+
+# Lazy initialization to avoid blocking calls
+def get_langfuse_client():
+    return get_client()
+
+def get_langfuse_handler():
+    from langfuse.langchain import CallbackHandler
+    return CallbackHandler()
 
 # Verify connection
 # if langfuse.auth_check():
 #     print("Langfuse client is authenticated and ready!")
 # else:
 #     print("Authentication failed. Please check your credentials and host.")
-
-
-MAX_TOOL_CALL_ITERATIONS = 7
 
 
 async def create_messages_summary(
@@ -223,9 +230,4 @@ workflow.add_node("structure_events", structure_events)
 
 workflow.add_edge(START, "supervisor")
 
-from langfuse.langchain import CallbackHandler
-
-langfuse_handler = CallbackHandler()
-
-
-graph = workflow.compile().with_config({"callbacks": [langfuse_handler]})
+graph = workflow.compile().with_config({"callbacks": [get_langfuse_handler()]})

@@ -1,22 +1,11 @@
-from typing import Any, List, Type
+from typing import List, Type
 
 from langchain.chat_models import init_chat_model
-from langchain_core.language_models import BaseChatModel
 from langchain_core.runnables import Runnable, RunnableConfig
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel
 from src.configuration import Configuration
 from src.utils import get_api_key_for_model
-
-
-def get_llm(model_name: str, **kwargs: Any) -> BaseChatModel:
-    """Get LLM service."""
-    return init_chat_model(temperature=0, model=model_name, **kwargs)
-
-
-# model_for_tools = get_llm("ollama:gpt-oss:20b")
-model_for_tools = get_llm("ollama:gpt-oss:20b")
-model_for_structured = get_llm("ollama:mistral-nemo:latest")
 
 configurable_model = init_chat_model(
     configurable_fields=("model", "max_tokens", "api_key"),
