@@ -6,7 +6,7 @@ from typing import List
 import aiohttp
 import tiktoken
 
-FIRECRAWL_API_URL = f"{os.getenv('FIRECRAWL_API_URL')}/v0/scrape"
+FIRECRAWL_API_URL = f"{os.getenv('FIRECRAWL_BASE_URL', 'https://api.firecrawl.dev')}/v0/scrape"
 
 
 async def url_crawl(url: str) -> str:
@@ -24,6 +24,13 @@ async def url_crawl(url: str) -> str:
 async def scrape_page_content(url):
     """Scrapes URL using Firecrawl API and returns Markdown content."""
     try:
+        headers = {"Content-Type": "application/json"}
+        
+        # Add API key if available
+        api_key = os.getenv('FIRECRAWL_API_KEY')
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+        
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 FIRECRAWL_API_URL,
@@ -32,7 +39,7 @@ async def scrape_page_content(url):
                     "pageOptions": {"onlyMainContent": True},
                     "formats": ["markdown"],
                 },
-                headers={"Content-Type": "application/json"},
+                headers=headers,
                 timeout=aiohttp.ClientTimeout(total=30),
             ) as response:
                 response.raise_for_status()

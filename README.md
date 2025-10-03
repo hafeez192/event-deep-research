@@ -91,7 +91,7 @@ uv sync
 # 3. Set up environment variables
 cp .env.example .env
 # Edit .env with your API keys:
-# - FIRECRAWL_API_KEY (required)
+# - FIRECRAWL_API_KEY (required for production, optional for local testing)
 # - TAVILY_API_KEY (required)
 # - OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_API_KEY (optional, for LLM)
 
@@ -142,7 +142,7 @@ LLM_MODEL="ollama:mistral-nemo:latest"
 
 You'll need these free API keys:
 
-- **[Firecrawl](https://firecrawl.dev/)** - Web scraping (get free API key)
+- **[Firecrawl](https://firecrawl.dev/)** - Web scraping (get free API key, optional for local testing)
 - **[Tavily](https://tavily.com/)** - Web search (get free API key)
 - **LLM Provider** (choose one or more):
   - **[OpenAI](https://platform.openai.com/)** - GPT models
