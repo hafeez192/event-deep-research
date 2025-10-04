@@ -147,9 +147,6 @@ async def supervisor_tools_node(
 
         elif tool_name == "ResearchEventsTool":
             research_question = tool_args["research_question"]
-            print("research_question", research_question)
-            print("existing_events", existing_events)
-            print("used_domains", used_domains)
             result = await research_events_app.ainvoke(
                 {
                     "research_question": research_question,
