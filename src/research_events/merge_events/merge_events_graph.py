@@ -7,6 +7,7 @@ from langgraph.pregel.main import asyncio
 from pydantic import BaseModel, Field
 from src.configuration import Configuration
 from src.llm_service import create_tools_model
+from src.research_events.chunk_graph import create_biographic_event_graph
 from src.research_events.merge_events.prompts import (
     EXTRACT_AND_CATEGORIZE_PROMPT,
     MERGE_EVENTS_TEMPLATE,
@@ -58,22 +59,65 @@ class OutputMergeEventsState(TypedDict):
 
 async def split_events(
     state: MergeEventsState,
-) -> Command[Literal["extract_and_categorize_chunk"]]:
-    """Use token-based chunking from URL crawler"""
+) -> Command[Literal["filter_chunks", "__end__"]]:
+    """Use token-based chunking from URL crawler and filter for biographical events"""
     extracted_events = state.get("extracted_events", "")
 
     if not extracted_events.strip():
         # No content to process
         return Command(
-            goto="combine_new_and_original_events",
+            goto="__end__",
             update={"text_chunks": [], "categorized_chunks": []},
         )
 
     chunks = await chunk_text_by_tokens(extracted_events)
 
     return Command(
-        goto="extract_and_categorize_chunk",
+        goto="filter_chunks",
         update={"text_chunks": chunks, "categorized_chunks": []},
+    )
+
+
+async def filter_chunks(
+    state: MergeEventsState, config: RunnableConfig
+) -> Command[Literal["extract_and_categorize_chunk", "__end__"]]:
+    """Filter chunks to only process those containing biographical events"""
+    chunks = state.get("text_chunks", [])
+
+    if not chunks:
+        return Command(
+            goto="__end__",
+        )
+
+    # Use chunk graph to filter for biographical events
+    chunk_graph = create_biographic_event_graph()
+
+    configurable = Configuration.from_runnable_config(config)
+    if len(chunks) > configurable.max_chunks:
+        # To avoid recursion issues, set max chunks
+        chunks = chunks[: configurable.max_chunks]
+
+    # Process each chunk through the biographic event detection graph
+    relevant_chunks = []
+    for chunk in chunks:
+        chunk_result = await chunk_graph.ainvoke({"text": chunk}, config)
+
+        # Check if any chunk contains biographical events
+        has_events = any(
+            result.contains_biographic_event
+            for result in chunk_result["results"].values()
+        )
+
+        if has_events:
+            relevant_chunks.append(chunk)
+
+    if not relevant_chunks:
+        # No relevant chunks found
+        return Command(goto="__end__")
+
+    return Command(
+        goto="extract_and_categorize_chunk",
+        update={"text_chunks": relevant_chunks, "categorized_chunks": []},
     )
 
 
@@ -107,7 +151,10 @@ async def extract_and_categorize_chunk(
     ):
         categorized_data = response.tool_calls[0]["args"]
         # Convert any list values to strings
-        categorized_data = {k: "\n".join(v) if isinstance(v, list) else v for k, v in categorized_data.items()}
+        categorized_data = {
+            k: "\n".join(v) if isinstance(v, list) else v
+            for k, v in categorized_data.items()
+        }
         categorized = CategoriesWithEvents(**categorized_data)
     else:
         categorized = CategoriesWithEvents(early="", personal="", career="", legacy="")
@@ -205,6 +252,7 @@ merge_events_graph_builder = StateGraph(
 )
 
 merge_events_graph_builder.add_node("split_events", split_events)
+merge_events_graph_builder.add_node("filter_chunks", filter_chunks)
 merge_events_graph_builder.add_node(
     "extract_and_categorize_chunk", extract_and_categorize_chunk
 )

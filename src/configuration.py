@@ -26,6 +26,10 @@ class Configuration(BaseModel):
         default="ollama:gpt-oss:20b",
         description="Override model for tools (mainly for Ollama users)",
     )
+    chunk_llm_model: str | None = Field(
+        default="ollama:gemma3:4b",
+        description="Small model for chunk biographical event detection",
+    )
 
     structured_llm_max_tokens: int = Field(
         default=4096, description="Maximum tokens for structured output model"
@@ -59,6 +63,9 @@ class Configuration(BaseModel):
     max_tool_iterations: int = Field(
         default=3, description="Maximum number of tool iterations"
     )
+    max_chunks: int = Field(
+        default=2, description="Maximum number of chunks to process for biographical event detection"
+    )
 
     def get_effective_structured_model(self) -> str:
         """Get the effective structured model, using overrides if provided."""
@@ -77,6 +84,12 @@ class Configuration(BaseModel):
         if self.llm_model.startswith("ollama:"):
             return "ollama:gpt-oss:20b"
         return self.llm_model
+
+    def get_effective_chunk_model(self) -> str:
+        """Get the effective chunk model, using overrides if provided."""
+        if self.chunk_llm_model:
+            return self.chunk_llm_model
+        return "ollama:gemma3:4b"
 
     @classmethod
     def from_runnable_config(

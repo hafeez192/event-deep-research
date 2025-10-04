@@ -68,3 +68,25 @@ def create_structured_model(
         max_tokens=configurable.structured_llm_max_tokens,
         max_retries=configurable.max_structured_output_retries,
     )
+
+
+# --- Public Function 3: For Small Chunk Models ---
+def create_chunk_model(
+    config: RunnableConfig, class_name: Type[BaseModel] | None = None
+) -> Runnable:
+    """Creates a small model for chunk biographical event detection."""
+    configurable = Configuration.from_runnable_config(config)
+
+    # The chain is just the base model itself
+    if class_name:
+        base_model = configurable_model.with_structured_output(class_name)
+    else:
+        base_model = configurable_model
+
+    return _build_and_configure_model(
+        config=config,
+        model_chain=base_model,
+        model_name=configurable.get_effective_chunk_model(),
+        max_tokens=1024,  # Smaller token limit for chunk processing
+        max_retries=2,  # Fewer retries for chunk processing
+    )
