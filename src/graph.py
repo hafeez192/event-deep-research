@@ -89,10 +89,8 @@ async def supervisor_node(
     human_message = HumanMessage(content="Start the research process.")
     prompt = [system_message, human_message]
 
-    print("PROMPT", prompt)
     response = await tools_model.ainvoke(prompt)
 
-    print("RESPONSE", response)
     conversation_summary = await create_messages_summary(state, [response], config)
 
     # The output is an AIMessage with tool_calls, which we add to the history
