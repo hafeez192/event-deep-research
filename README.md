@@ -1,13 +1,13 @@
 # 🕵️ Event Deep Research
 
-**The Problem**
+**Problem**: 
 In many old books there are small chronologies of the life events of authors and other relevant historical figures. But each of these
 chronologies are in specific books, they are not easy to find.
 
-**The Solution**
+**Solution**: 
 AI agents automatically discover sources, extract events, and compile structured JSON timelines in seconds.
 
-**Key Highlights**
+**Key Highlights**: 
 Multi-agent system with intelligent crawling, real-time visualization, and support for OpenAI, Anthropic, Google, or Ollama models.
 
 <img src="images/event-deep-research.webp" alt="Event Deep Research" width="600"/>
