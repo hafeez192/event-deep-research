@@ -10,7 +10,9 @@ AI agents automatically discover sources, extract events, and compile structured
 **Key Highlights**
 Multi-agent system with intelligent crawling, real-time visualization, and support for OpenAI, Anthropic, Google, or Ollama models.
 
-![Agent Graph](images/kronologs-graph.webp)
+<img src="images/event-deep-research.webp" alt="Event Deep Research" width="600"/>
+
+<img src="images/kronologs-graph.webp" alt="Agent Graph" />
 
 ## ✨ Features
 
