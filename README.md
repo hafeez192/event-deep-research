@@ -1,4 +1,4 @@
-# 🕵️ Deep Event Research
+# 🕵️ Event Deep Research
 
 **The Problem**
 In many old books there are small chronologies of the life events of authors and other relevant historical figures. But each of these
