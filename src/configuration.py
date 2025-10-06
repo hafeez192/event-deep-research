@@ -12,7 +12,7 @@ class Configuration(BaseModel):
     llm_model: str = Field(
         default="",
         # default="google_genai:gemini-2.5-flash-lite",
-        description="Primary LLM model to use for both structured output and tools (except Ollama)",
+        description="Primary LLM model to use for both structured output and tools",
     )
 
     # Optional overrides for Ollama users (due to gpt-oss structured output bug)
@@ -61,10 +61,11 @@ class Configuration(BaseModel):
         default=100000, description="Maximum content length to process"
     )
     max_tool_iterations: int = Field(
-        default=3, description="Maximum number of tool iterations"
+        default=5, description="Maximum number of tool iterations"
     )
     max_chunks: int = Field(
-        default=2, description="Maximum number of chunks to process for biographical event detection"
+        default=2,
+        description="Maximum number of chunks to process for biographical event detection",
     )
 
     def get_effective_structured_model(self) -> str:

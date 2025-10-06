@@ -80,10 +80,7 @@ class CategoriesWithEvents(BaseModel):
 
 
 class ResearchEventsTool(BaseModel):
-    """Finds a list of authoritative biography URLs for a given person.
-    This should be the very first tool you call in the research process to gather a list of
-    high-quality sources before you can start extracting events.
-    """
+    """The query to be used to research events about an historical figure. The query is based on the reflection of the assistant."""
 
     research_question: str
     pass  # No arguments needed

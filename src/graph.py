@@ -133,15 +133,6 @@ async def supervisor_tools_node(
                     "used_domains": used_domains,
                 }
             )
-            # result = {
-            #     "existing_events": {
-            #         "early": "Early event",
-            #         "personal": "Personal event",
-            #         "career": "Career event",
-            #         "legacy": "Legacy event",
-            #     },
-            #     "used_domains": ["www.example.com", "www.example.com"],
-            # }
             existing_events = result["existing_events"]
             used_domains = result["used_domains"]
 
