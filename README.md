@@ -1,18 +1,20 @@
 # 🕵️ Event Deep Research
 
-**Problem**: 
+**Problem**:
 In many old books there are small chronologies of the life events of authors and other relevant historical figures. But each of these
 chronologies are in specific books, they are not easy to find.
 
-**Solution**: 
+**Solution**:
 An AI agent that automatically discovers sources, extract events, and compile structured JSON timelines.
 
-**Key Highlights**: 
+**Key Highlights**:
 Multi-agent system with intelligent crawling, real-time visualization, and support for OpenAI, Anthropic, Google, or Ollama models.
 
-<img src="images/event-deep-research.webp" alt="Event Deep Research" width="600"/>
+<img src="media/event-deep-research.webp" alt="Event Deep Research" width="600"/>
 
-<img src="images/kronologs-graph.webp" alt="Agent Graph" />
+<img src="media/kronologs-graph.webp" alt="Agent Graph" />
+
+<video src="media/eventdeepresearch-demo.mp4" alt="Event Deep Research Demo" width="600"> </video>
 
 ## ✨ Features
 
@@ -245,7 +247,7 @@ uv run pytest -v -m llm
 }
 ```
 
-![Langgraph Studio Graph](images/kronologs-lgstudiograph.webp)
+![Langgraph Studio Graph](media/kronologs-lgstudiograph.webp)
 
 ## 📁 Project Structure
 
