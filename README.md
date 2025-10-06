@@ -104,8 +104,8 @@ https://github.com/user-attachments/assets/ebda1625-fdf6-4f3b-a5d2-319d6db40ec2
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/bernatsampera/deep-event-research.git
-cd deep-event-research
+git clone https://github.com/bernatsampera/event-deep-research.git
+cd event-deep-research
 
 # 2. Create virtual environment and install dependencies
 uv venv && source .venv/bin/activate
@@ -187,7 +187,7 @@ We welcome contributions! This is a great project to learn:
 4. **Push** to the branch: `git push origin feature/amazing-feature`
 5. **Open** a Pull Request
 
-See the [open issues](https://github.com/bernatsampera/deep-event-research/issues) for a full list of proposed features and known issues.
+See the [open issues](https://github.com/bernatsampera/event-deep-research/issues) for a full list of proposed features and known issues.
 
 ## License
 
