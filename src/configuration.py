@@ -10,7 +10,7 @@ class Configuration(BaseModel):
 
     # Single model for most providers (simplified configuration)
     llm_model: str = Field(
-        default="google_genai:gemini-2.5-flash-lite",
+        default="google_genai:gemini-2.5-flash",
         description="Primary LLM model to use for both structured output and tools",
     )
 
@@ -63,26 +63,24 @@ class Configuration(BaseModel):
         description="Maximum number of chunks to process for biographical event detection",
     )
 
-    def get_effective_structured_model(self) -> str:
-        """Get the effective structured model, using overrides if provided."""
+    def get_llm_structured_model(self) -> str:
+        """Get the LLM structured model, using overrides if provided."""
+        print(f"Getting LLM structured model: {self.structured_llm_model}")
         if self.structured_llm_model:
             return self.structured_llm_model
-        # For Ollama, use different models due to gpt-oss structured output bug
-        if self.llm_model.startswith("ollama:"):
-            return "ollama:mistral-nemo:latest"
+
         return self.llm_model
 
-    def get_effective_tools_model(self) -> str:
-        """Get the effective tools model, using overrides if provided."""
+    def get_llm_with_tools_model(self) -> str:
+        """Get the LLM with tools model, using overrides if provided."""
+        print(f"Getting LLM with tools model: {self.tools_llm_model}")
         if self.tools_llm_model:
             return self.tools_llm_model
-        # For Ollama, use different models due to gpt-oss structured output bug
-        if self.llm_model.startswith("ollama:"):
-            return "ollama:gpt-oss:20b"
+
         return self.llm_model
 
-    def get_effective_chunk_model(self) -> str:
-        """Get the effective chunk model, using overrides if provided."""
+    def get_llm_chunk_model(self) -> str:
+        """Get the LLM chunk model, using overrides if provided."""
         if self.chunk_llm_model:
             return self.chunk_llm_model
         return "ollama:gemma3:4b"

@@ -6,7 +6,7 @@ from langgraph.graph.state import Command, RunnableConfig
 from langgraph.pregel.main import asyncio
 from pydantic import BaseModel, Field
 from src.configuration import Configuration
-from src.llm_service import create_tools_model
+from src.llm_service import create_llm_with_tools
 from src.research_events.chunk_graph import create_biographic_event_graph
 from src.research_events.merge_events.prompts import (
     EXTRACT_AND_CATEGORIZE_PROMPT,
@@ -141,7 +141,7 @@ async def extract_and_categorize_chunk(
     )
 
     tools = [tool(RelevantEventsCategorized), tool(IrrelevantChunk)]
-    model = create_tools_model(tools=tools, config=config)
+    model = create_llm_with_tools(tools=tools, config=config)
     response = await model.ainvoke(prompt)
 
     # Parse response
@@ -224,10 +224,10 @@ async def combine_new_and_original_events(
         )
 
         # Use regular structured model for merging (not tools model)
-        from src.llm_service import create_structured_model
+        from src.llm_service import create_llm_structured_model
 
         merge_tasks.append(
-            (category, create_structured_model(config=config).ainvoke(prompt))
+            (category, create_llm_structured_model(config=config).ainvoke(prompt))
         )
 
     final_merged_dict = {}

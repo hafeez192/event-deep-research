@@ -4,7 +4,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from pydantic import BaseModel, Field
 from src.configuration import Configuration
-from src.llm_service import create_chunk_model
+from src.llm_service import create_llm_chunk_model
 
 
 class BiographicEventCheck(BaseModel):
@@ -36,7 +36,7 @@ def split_text(state: ChunkState) -> ChunkState:
 
 def check_chunk_for_events(state: ChunkState, config) -> ChunkState:
     """Check each chunk for biographical events using structured output."""
-    model = create_chunk_model(config, BiographicEventCheck)
+    model = create_llm_chunk_model(config, BiographicEventCheck)
     results = {}
 
     for i, chunk in enumerate(state["chunks"]):

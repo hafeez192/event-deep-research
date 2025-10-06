@@ -6,7 +6,7 @@ from langgraph.graph.state import RunnableConfig
 from langgraph.types import Command
 from pydantic import BaseModel, Field
 from src.configuration import Configuration
-from src.llm_service import create_structured_model
+from src.llm_service import create_llm_structured_model
 from src.research_events.merge_events.merge_events_graph import merge_events_app
 from src.services.url_service import URLService
 from src.state import CategoriesWithEvents
@@ -74,7 +74,7 @@ def url_finder(
 
     prompt = prompt.format(results=urls, research_question=research_question)
 
-    structured_llm = create_structured_model(config=config, class_name=BestUrls)
+    structured_llm = create_llm_structured_model(config=config, class_name=BestUrls)
 
     structured_result = structured_llm.invoke(prompt)
 
@@ -106,7 +106,7 @@ def updateUrlList(
 ) -> tuple[list[str], list[str]]:
     urls = state.get("urls", [])
     used_domains = state.get("used_domains", [])
-    
+
     return URLService.update_url_list(urls, used_domains)
 
 
@@ -206,9 +206,12 @@ research_events_builder.add_node("merge_events_and_update", merge_events_and_upd
 # Set the entry point
 research_events_builder.add_edge(START, "url_finder")
 
+
 def get_langfuse_handler():
     from langfuse.langchain import CallbackHandler
+
     return CallbackHandler()
+
 
 research_events_app = research_events_builder.compile().with_config(
     {"callbacks": [get_langfuse_handler()]}

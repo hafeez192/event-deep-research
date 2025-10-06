@@ -32,7 +32,9 @@ def _build_and_configure_model(
 
 
 # --- Public Function 1: For Models WITH Tools ---
-def create_tools_model(tools: List[Type[BaseTool]], config: RunnableConfig) -> Runnable:
+def create_llm_with_tools(
+    tools: List[Type[BaseTool]], config: RunnableConfig
+) -> Runnable:
     """Creates a model configured specifically for tool-calling."""
     configurable = Configuration.from_runnable_config(config)
 
@@ -42,14 +44,14 @@ def create_tools_model(tools: List[Type[BaseTool]], config: RunnableConfig) -> R
     return _build_and_configure_model(
         config=config,
         model_chain=model_with_tools,
-        model_name=configurable.get_effective_tools_model(),
+        model_name=configurable.get_llm_with_tools_model(),
         max_tokens=configurable.tools_llm_max_tokens,
         max_retries=configurable.max_tools_output_retries,
     )
 
 
 # --- Public Function 2: For Models WITHOUT Tools ---
-def create_structured_model(
+def create_llm_structured_model(
     config: RunnableConfig, class_name: Type[BaseModel] | None = None
 ) -> Runnable:
     """Creates a general-purpose chat model with no tools."""
@@ -64,14 +66,14 @@ def create_structured_model(
     return _build_and_configure_model(
         config=config,
         model_chain=base_model,
-        model_name=configurable.get_effective_structured_model(),
+        model_name=configurable.get_llm_structured_model(),
         max_tokens=configurable.structured_llm_max_tokens,
         max_retries=configurable.max_structured_output_retries,
     )
 
 
 # --- Public Function 3: For Small Chunk Models ---
-def create_chunk_model(
+def create_llm_chunk_model(
     config: RunnableConfig, class_name: Type[BaseModel] | None = None
 ) -> Runnable:
     """Creates a small model for chunk biographical event detection."""
@@ -86,7 +88,7 @@ def create_chunk_model(
     return _build_and_configure_model(
         config=config,
         model_chain=base_model,
-        model_name=configurable.get_effective_chunk_model(),
+        model_name=configurable.get_llm_chunk_model(),
         max_tokens=1024,  # Smaller token limit for chunk processing
         max_retries=2,  # Fewer retries for chunk processing
     )

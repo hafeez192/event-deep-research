@@ -10,8 +10,8 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 from src.configuration import Configuration
 from src.llm_service import (
-    create_structured_model,
-    create_tools_model,
+    create_llm_structured_model,
+    create_llm_with_tools,
 )
 from src.prompts import (
     events_summarizer_prompt,
@@ -57,7 +57,7 @@ async def supervisor_node(
         think_tool,
     ]
 
-    tools_model = create_tools_model(tools=tools, config=config)
+    tools_model = create_llm_with_tools(tools=tools, config=config)
     messages = state.get("conversation_history", "")
     messages_summary = get_buffer_string_with_tools(messages)
     system_message = SystemMessage(
@@ -140,7 +140,7 @@ async def supervisor_tools_node(
             summarizer_prompt = events_summarizer_prompt.format(
                 existing_events=existing_events
             )
-            response = await create_structured_model(config=config).ainvoke(
+            response = await create_llm_structured_model(config=config).ainvoke(
                 summarizer_prompt
             )
 
@@ -187,7 +187,7 @@ async def structure_events(
         print("Warning: No cleaned events text found in state")
         return {"chronology": []}
 
-    structured_llm = create_structured_model(config=config, class_name=Chronology)
+    structured_llm = create_llm_structured_model(config=config, class_name=Chronology)
 
     prompt = structure_events_prompt.format(existing_events=existing_events)
 

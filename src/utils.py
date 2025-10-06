@@ -58,11 +58,15 @@ def get_buffer_string_with_tools(messages: list[BaseMessage]) -> str:
         if isinstance(m, HumanMessage):
             lines.append(f"Human: {m.content}")
         elif isinstance(m, AIMessage):
-            print("AI MESSAGE", m)
             ai_content = f"AI: {m.content}"
             # Include tool calls if present
-            if hasattr(m, 'tool_calls') and m.tool_calls:
-                tool_calls_str = ", ".join([f"{tc.get('name', 'unknown')}({tc.get('args', {})})" for tc in m.tool_calls])
+            if hasattr(m, "tool_calls") and m.tool_calls:
+                tool_calls_str = ", ".join(
+                    [
+                        f"{tc.get('name', 'unknown')}({tc.get('args', {})})"
+                        for tc in m.tool_calls
+                    ]
+                )
                 ai_content += f" [Tool calls: {tool_calls_str}]"
             lines.append(ai_content)
         elif isinstance(m, SystemMessage):
