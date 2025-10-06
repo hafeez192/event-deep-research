@@ -27,7 +27,7 @@ from src.state import (
     SupervisorState,
     SupervisorStateInput,
 )
-from src.utils import think_tool
+from src.utils import get_buffer_string_with_tools, think_tool
 
 config = Configuration()
 MAX_TOOL_CALL_ITERATIONS = config.max_tool_iterations
@@ -58,12 +58,13 @@ async def supervisor_node(
     ]
 
     tools_model = create_tools_model(tools=tools, config=config)
-
+    messages = state.get("conversation_history", "")
+    messages_summary = get_buffer_string_with_tools(messages)
     system_message = SystemMessage(
         content=lead_researcher_prompt.format(
             person_to_research=state["person_to_research"],
             events_summary=state.get("events_summary", ""),
-            messages_summary=state.get("conversation_history", ""),
+            messages_summary=messages_summary,
             max_iterations=5,
         )
     )

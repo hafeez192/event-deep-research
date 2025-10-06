@@ -1,5 +1,12 @@
 import os
 
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    HumanMessage,
+    SystemMessage,
+    ToolMessage,
+)
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
 
@@ -42,3 +49,31 @@ def get_api_key_for_model(model_name: str, config: RunnableConfig):
         # Ollama doesn't need API key
         return None
     return None
+
+
+def get_buffer_string_with_tools(messages: list[BaseMessage]) -> str:
+    """Return a readable transcript showing roles, including tool names for ToolMessages."""
+    lines = []
+    for m in messages:
+        if isinstance(m, HumanMessage):
+            lines.append(f"Human: {m.content}")
+        elif isinstance(m, AIMessage):
+            print("AI MESSAGE", m)
+            ai_content = f"AI: {m.content}"
+            # Include tool calls if present
+            if hasattr(m, 'tool_calls') and m.tool_calls:
+                tool_calls_str = ", ".join([f"{tc.get('name', 'unknown')}({tc.get('args', {})})" for tc in m.tool_calls])
+                ai_content += f" [Tool calls: {tool_calls_str}]"
+            lines.append(ai_content)
+        elif isinstance(m, SystemMessage):
+            lines.append(f"System: {m.content}")
+        elif isinstance(m, ToolMessage):
+            # Include tool name if available
+            tool_name = (
+                getattr(m, "name", None) or getattr(m, "tool", None) or "unknown_tool"
+            )
+            lines.append(f"Tool[{tool_name}]: {m.content}")
+        else:
+            # fallback for unknown or custom message types
+            lines.append(f"{m.__class__.__name__}: {m.content}")
+    return "\n".join(lines)
