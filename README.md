@@ -1,66 +1,45 @@
-# 🕵️ Event Deep Research
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+[![Unlicense License][license-shield]][license-url]
+[![LinkedIn][linkedin-shield]][linkedin-url]
 
-**Problem**:
-In many old books there are small chronologies of the life events of authors and other relevant historical figures. But each of these
-chronologies are in specific books, they are not easy to find.
+# Event Deep Research
 
-**Solution**:
-An AI agent that automatically discovers sources, extract events, and compile structured JSON timelines.
-
-**Key Highlights**:
-Multi-agent system with intelligent crawling, real-time visualization, and support for OpenAI, Anthropic, Google, or Ollama models.
+AI Agent that researchs the lifes of historical figures and extracts the events into a structured JSON timeline.
 
 <img src="media/event-deep-research.webp" alt="Event Deep Research" width="600"/>
 
-<img src="media/kronologs-graph.webp" alt="Agent Graph" />
+## Table of Contents
 
+- [Event Deep Research](#event-deep-research)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Demo / Example](#demo--example)
+  - [🚀 Installation](#-installation)
+    - [Prerequisites](#prerequisites)
+    - [Setup](#setup)
+  - [Usage](#usage)
+    - [Via LangGraph Studio (Recommended)](#via-langgraph-studio-recommended)
+  - [Configuration (configuration.py)](#configuration-configurationpy)
+  - [Architecture / Internals](#architecture--internals)
+  - [Roadmap / Future Work](#roadmap--future-work)
+  - [Contributing](#contributing)
+  - [License](#license)
+  - [Acknowledgments](#acknowledgments)
 
+---
+
+## Features
+
+- Supervisor Agent with multiple tools (Research, think, Finish)
+- Merge Workflow to incorporate and deduplicate events from multiple sources
+- Support for OpenAI, Anthropic, Google, or Local models (Ollama)
+
+## Demo / Example
 
 https://github.com/user-attachments/assets/ebda1625-fdf6-4f3b-a5d2-319d6db40ec2
-
-
-## ✨ Features
-
-- **🔍 Automated Biographical Research** - Input any historical figure and get comprehensive event timelines
-- **🕷️ Intelligent Web Crawling** - Automatically discovers and extracts information from multiple sources
-- **📊 Structured Event Extraction** - Converts unstructured web content into clean, chronological JSON timelines
-- **🤖 Multi-Agent Coordination** - Specialized agents work together to research, crawl, and merge data
-- **🎯 Real-Time Visualization** - Watch the AI agents work through LangGraph Studio's interactive interface
-- **🔧 Flexible LLM Support** - Works with OpenAI, Anthropic, Google, or local Ollama models
-
-## 🎯 What You'll Learn
-
-This project demonstrates advanced AI agent patterns and techniques:
-
-- **Multi-Agent Orchestration** with LangGraph's supervisor pattern
-- **Context Engineering** for accurate information extraction
-- **Web Scraping & Search Integration** with real-time data sources
-- **Structured Output Generation** from unstructured web content
-- **Error Handling & State Management** in complex workflows
-- **Testing Strategies** for LLM-powered applications
-
-## ⚡ Quick Test (5 minutes)
-
-```bash
-# 1. Clone and setup
-git clone https://github.com/bernatsampera/deep-event-research.git
-cd deep-event-research
-uv venv && source .venv/bin/activate
-uv sync
-
-# 2. Add your API keys to .env
-cp .env.example .env
-# Edit .env with your FIRECRAWL_API_KEY and TAVILY_API_KEY
-
-# 3. Run tests (no API calls needed)
-make test
-
-# 4. Start the visual agent studio
-make dev
-# Open http://localhost:2024 and try researching "Albert Einstein"
-```
-
-## 🔄 How It Works
 
 **Input:**
 
@@ -114,14 +93,6 @@ make dev
 }
 ```
 
-## 🛠️ Tech Stack
-
-- **[LangGraph](https://github.com/langchain-ai/langgraph)** - Multi-agent orchestration
-- **[LangChain](https://github.com/langchain-ai/langchain)** - LLM integration
-- **[Firecrawl](https://firecrawl.dev/)** - Web scraping
-- **[Tavily](https://tavily.com/)** - Intelligent search
-- **Python 3.12+** with async/await patterns
-
 ## 🚀 Installation
 
 ### Prerequisites
@@ -143,131 +114,70 @@ uv sync
 # 3. Set up environment variables
 cp .env.example .env
 # Edit .env with your API keys:
+# FIRECRAWL_BASE_URL  (https://api.firecrawl.com/v1)
 # - FIRECRAWL_API_KEY (required for production, optional for local testing)
 # - TAVILY_API_KEY (required)
-# - OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_API_KEY (optional, for LLM)
+# - OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_API_KEY (Change model in configuration.py)
 
 # 4. Start the development server
-make dev
+uvx --refresh --from "langgraph-cli[inmem]" --with-editable . --python 3.12 langgraph dev --allow-blocking
 # Open http://localhost:2024 to access LangGraph Studio
 ```
 
-### Model Configuration
-
-The project supports multiple LLM providers with simplified configuration. Set a single `LLM_MODEL` environment variable in your `.env` file:
-
-**Supported Model Formats:**
-
-- `openai:gpt-4o` - OpenAI GPT models
-- `anthropic:claude-3-5-sonnet-20241022` - Anthropic Claude models
-- `google:gemini-1.5-pro` - Google Gemini models
-- `ollama:mistral-nemo:latest` - Local Ollama models
-
-**Example `.env` Configuration:**
-
-```bash
-# Use OpenAI (single model works for both structured output and tools)
-LLM_MODEL="openai:gpt-4o"
-OPENAI_API_KEY="your-openai-api-key"
-
-# Use Google (single model works for both structured output and tools)
-LLM_MODEL="google:gemini-1.5-pro"
-GOOGLE_API_KEY="your-google-api-key"
-
-# Use Anthropic (single model works for both structured output and tools)
-LLM_MODEL="anthropic:claude-3-5-sonnet-20241022"
-ANTHROPIC_API_KEY="your-anthropic-api-key"
-
-# Use Ollama (automatically handles dual models due to gpt-oss structured output bug)
-LLM_MODEL="ollama:mistral-nemo:latest"
-# Optional: Override the automatic dual model selection
-# STRUCTURED_LLM_MODEL="ollama:mistral-nemo:latest"
-# TOOLS_LLM_MODEL="ollama:gpt-oss:20b"
-```
-
-**Default values** (if not set in environment):
-
-- `LLM_MODEL="ollama:mistral-nemo:latest"`
-- For Ollama: automatically uses `mistral-nemo` for structured output and `gpt-oss` for tools
-
-### API Keys Setup
-
-You'll need these free API keys:
-
-- **[Firecrawl](https://firecrawl.dev/)** - Web scraping (get free API key, optional for local testing)
-- **[Tavily](https://tavily.com/)** - Web search (get free API key)
-- **LLM Provider** (choose one or more):
-  - **[OpenAI](https://platform.openai.com/)** - GPT models
-  - **[Anthropic](https://console.anthropic.com/)** - Claude models
-  - **[Google AI](https://aistudio.google.com/)** - Gemini models
-  - **Ollama** - Local models (no API key needed)
-
-## 🧪 Testing
-
-```bash
-# Run specific test
-uv run pytest src/test/test_research_events.py::test_research_events_with_mocked_llm -v
-
-# Run tests with real LLM calls (requires API keys)
-uv run pytest -v -m llm
-```
-
-## 🎮 Usage
+## Usage
 
 ### Via LangGraph Studio (Recommended)
 
-1. Start the development server: `make dev`
+1. Start the development server: `uvx --refresh --from "langgraph-cli[inmem]" --with-editable . --python 3.12 langgraph dev --allow-blocking`
 2. Open http://localhost:2024
 3. Select the `supervisor` graph
 4. Input your research query:
    ```json
    {
-     "person_to_research": "Leonardo da Vinci"
+     "person_to_research": "Albert Einstein"
    }
    ```
-5. Watch the agents work in real-time!
+5. Watch the agent work in real-time!
 
-### What the Agents Do
+## Configuration (configuration.py)
 
-1. **🔍 Research Agent** - Finds relevant biographical sources
-2. **🕷️ URL Crawler** - Extracts content from web pages
-3. **📊 Merge Agent** - Combines and deduplicates events
-4. **🎯 Supervisor** - Coordinates the entire workflow
+    llm_model: Primary LLM model to use for both structured output and tools
 
-### Example Output
+    # Optional overrides to change the models used for different parts of the workflow
+    structured_llm_model: Override model for structured output
+    tools_llm_model: Override model for tools
+    chunk_llm_model: Small model for chunk biographical event detection
 
-```json
-{
-  "structured_events": [
-    {
-      "name": "Birth in Vinci",
-      "description": "Leonardo da Vinci was born in Vinci, Italy",
-      "date": {"year": 1452, "note": ""},
-      "location": "Vinci, Italy",
-      "id": "time-1452-04-15T00:00:00Z"
-    }
-  ]
-}
-```
+    # Maximum tokens for the models
+    structured_llm_max_tokens: Maximum tokens for structured output model
+    tools_llm_max_tokens: Maximum tokens for tools model
 
-![Langgraph Studio Graph](media/kronologs-lgstudiograph.webp)
+    # Maximum retry attempts for the models
+    max_structured_output_retries: Maximum retry attempts for structured output
+    max_tools_output_retries: Maximum retry attempts for tool calls
 
-## 📁 Project Structure
+    # Values from graph files
+    default_chunk_size: Default chunk size for text processing
+    default_overlap_size: Default overlap size between chunks
+    max_content_length: Maximum content length to process
+    max_tool_iterations: Maximum number of tool iterations
+    max_chunks: Maximum number of chunks to process for biographical event detection
 
-```
-src/
-├── core/                 # Shared utilities (error handling)
-├── services/             # Business logic services
-├── research_events/      # Event extraction & merging
-├── url_crawler/          # Web scraping agents
-└── state.py             # TypedDict state definitions
-```
+## Architecture / Internals
 
-See the [open issues](https://github.com/bernatsampera/deep-event-research/issues) for a full list of proposed features and known issues.
+1. **Supervisor Agent** - Coordinates the entire workflow, decides next steps
+2. **Research Agent** - Finds relevant biographical sources, manages crawler and merge agents
+3. **URL Crawler** - Extracts content from web pages with Firecrawl
+4. **Merge Agent** - Combines and deduplicates events
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+<img src="media/kronologs-graph.webp" alt="Agent Graph" />
 
-## 🤝 Contributing
+## Roadmap / Future Work
+
+- Add images to relevant events
+- Improve speed of merge graph
+
+## Contributing
 
 We welcome contributions! This is a great project to learn:
 
@@ -277,29 +187,29 @@ We welcome contributions! This is a great project to learn:
 4. **Push** to the branch: `git push origin feature/amazing-feature`
 5. **Open** a Pull Request
 
-### Development Commands
+See the [open issues](https://github.com/bernatsampera/deep-event-research/issues) for a full list of proposed features and known issues.
 
-```bash
-# Start dev server
-make dev
-```
-
-## 📄 License
+## License
 
 Distributed under the MIT License. See `LICENSE.txt` for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **[LangChain](https://github.com/langchain-ai/langchain)** - Foundational LLM framework
 - **[LangGraph](https://github.com/langchain-ai/langgraph)** - Multi-agent orchestration
 - **[Open Deep Research](https://github.com/langchain-ai/open_deep_research)** - Research methodology inspiration
+- **[Firecrawl](https://www.firecrawl.com/)** - Web scraping
+- **[Tavily](https://tavily.ai/)** - Web search
 
----
-
-<div align="center">
-
-**⭐ Star this repo if it helped you learn about AI agents!**
-
-Made with ❤️ by [Bernat Sampera](https://github.com/bernatsampera)
-
-</div>
+[contributors-shield]: https://img.shields.io/github/contributors/bernatsampera/event-deep-research.svg?style=for-the-badge
+[contributors-url]: https://github.com/bernatsampera/event-deep-research/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/bernatsampera/event-deep-research.svg?style=for-the-badge
+[forks-url]: https://github.com/bernatsampera/event-deep-research/network/members
+[stars-shield]: https://img.shields.io/github/stars/bernatsampera/event-deep-research.svg?style=for-the-badge
+[stars-url]: https://github.com/bernatsampera/event-deep-research/stargazers
+[issues-shield]: https://img.shields.io/github/issues/bernatsampera/event-deep-research.svg?style=for-the-badge
+[issues-url]: https://github.com/bernatsampera/event-deep-research/issues
+[license-shield]: https://img.shields.io/github/license/bernatsampera/event-deep-research.svg?style=for-the-badge
+[license-url]: https://github.com/bernatsampera/event-deep-research/blob/master/LICENSE.txt
+[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
+[linkedin-url]: https://www.linkedin.com/in/bernat-sampera-195152107/

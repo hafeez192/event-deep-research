@@ -10,24 +10,24 @@ class Configuration(BaseModel):
 
     # Single model for most providers (simplified configuration)
     llm_model: str = Field(
-        default="",
-        # default="google_genai:gemini-2.5-flash-lite",
+        default="google_genai:gemini-2.5-flash-lite",
         description="Primary LLM model to use for both structured output and tools",
     )
 
-    # Optional overrides for Ollama users (due to gpt-oss structured output bug)
+    # Optional overrides
     structured_llm_model: str | None = Field(
-        # default=None,
-        default="ollama:mistral-nemo:latest",
-        description="Override model for structured output (mainly for Ollama users)",
+        default=None,
+        # default="ollama:mistral-nemo:latest",
+        description="Override model for structured output",
     )
     tools_llm_model: str | None = Field(
-        # default=None,
-        default="ollama:gpt-oss:20b",
-        description="Override model for tools (mainly for Ollama users)",
+        default=None,
+        # default="ollama:gpt-oss:20b",
+        description="Override model for tools",
     )
     chunk_llm_model: str | None = Field(
-        default="ollama:gemma3:4b",
+        default=None,
+        # default="ollama:gemma3:4b",
         description="Small model for chunk biographical event detection",
     )
 
@@ -37,11 +37,6 @@ class Configuration(BaseModel):
     tools_llm_max_tokens: int = Field(
         default=4096, description="Maximum tokens for tools model"
     )
-
-    # API Keys for different providers
-    openai_api_key: str | None = Field(default=None, description="OpenAI API key")
-    anthropic_api_key: str | None = Field(default=None, description="Anthropic API key")
-    google_api_key: str | None = Field(default=None, description="Google AI API key")
 
     max_structured_output_retries: int = Field(
         default=3, description="Maximum retry attempts for structured output"
