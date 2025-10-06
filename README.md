@@ -14,7 +14,10 @@ Multi-agent system with intelligent crawling, real-time visualization, and suppo
 
 <img src="media/kronologs-graph.webp" alt="Agent Graph" />
 
-<video src="media/eventdeepresearch-demo.mp4" alt="Event Deep Research Demo" width="600"> </video>
+
+
+https://github.com/user-attachments/assets/ebda1625-fdf6-4f3b-a5d2-319d6db40ec2
+
 
 ## ✨ Features
 
