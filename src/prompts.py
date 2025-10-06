@@ -27,7 +27,7 @@ When you call `think_tool`, you MUST construct its `reflection` argument as a mu
 2.  **Top Priority Gap:** Identify the SINGLE most important missing piece of information in the `<Events Missing>` (e.g., "Missing his exact birth date and location", or "Missing details about his life in Paris").
 3.  **Planned Query:** Write the EXACT search query you will use in the next `ResearchEventsTool` call to fill that gap. DO NOT describe the query; WRITE the query itself.
     - BAD: "X Question."
-    - GOOD: "Query: X Question about {person_to_research}"
+    - GOOD: "X Question about {person_to_research}"
 
 **CRITICAL:** This structured analysis IS the `reflection` argument.
 </Reflection Instructions>
