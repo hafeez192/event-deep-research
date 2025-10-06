@@ -5,7 +5,7 @@ In many old books there are small chronologies of the life events of authors and
 chronologies are in specific books, they are not easy to find.
 
 **Solution**: 
-AI agents automatically discover sources, extract events, and compile structured JSON timelines in seconds.
+An AI agent that automatically discovers sources, extract events, and compile structured JSON timelines.
 
 **Key Highlights**: 
 Multi-agent system with intelligent crawling, real-time visualization, and support for OpenAI, Anthropic, Google, or Ollama models.
