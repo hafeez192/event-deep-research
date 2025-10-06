@@ -127,10 +127,6 @@ class SupervisorStateInput(TypedDict):
         default=[],
         description="The domains that have been used to extract events.",
     )
-    conversation_summary: str = Field(
-        default="",
-        description="A summary of the conversation history.",
-    )
     events_summary: str = Field(
         default="",
         description="A summary of the events.",

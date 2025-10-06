@@ -2,7 +2,6 @@ from typing import Literal
 
 from langchain_core.messages import (
     HumanMessage,
-    MessageLikeRepresentation,
     SystemMessage,
     ToolMessage,
 )
@@ -15,7 +14,6 @@ from src.llm_service import (
     create_tools_model,
 )
 from src.prompts import (
-    create_messages_summary_prompt,
     events_summarizer_prompt,
     lead_researcher_prompt,
     structure_events_prompt,
@@ -48,22 +46,6 @@ def get_langfuse_handler():
 #     print("Authentication failed. Please check your credentials and host.")
 
 
-async def create_messages_summary(
-    state: SupervisorState,
-    new_messages: list[MessageLikeRepresentation],
-    config: RunnableConfig,
-) -> str:
-    previous_messages_summary = state.get("conversation_summary", "")
-    """Create a summary of the messages."""
-    prompt = create_messages_summary_prompt.format(
-        new_messages=new_messages,
-        previous_messages_summary=previous_messages_summary,
-    )
-
-    response = await create_structured_model(config=config).ainvoke(prompt)
-    return response.content
-
-
 async def supervisor_node(
     state: SupervisorState,
     config: RunnableConfig,
@@ -81,7 +63,7 @@ async def supervisor_node(
         content=lead_researcher_prompt.format(
             person_to_research=state["person_to_research"],
             events_summary=state.get("events_summary", ""),
-            messages_summary=state.get("conversation_summary", ""),
+            messages_summary=state.get("conversation_history", ""),
             max_iterations=5,
         )
     )
@@ -91,14 +73,11 @@ async def supervisor_node(
 
     response = await tools_model.ainvoke(prompt)
 
-    conversation_summary = await create_messages_summary(state, [response], config)
-
     # The output is an AIMessage with tool_calls, which we add to the history
     return Command(
         goto="supervisor_tools",
         update={
             "conversation_history": [response],
-            "conversation_summary": conversation_summary,
             "iteration_count": state.get("iteration_count", 0) + 1,
         },
     )
@@ -154,6 +133,15 @@ async def supervisor_tools_node(
                     "used_domains": used_domains,
                 }
             )
+            # result = {
+            #     "existing_events": {
+            #         "early": "Early event",
+            #         "personal": "Personal event",
+            #         "career": "Career event",
+            #         "legacy": "Legacy event",
+            #     },
+            #     "used_domains": ["www.example.com", "www.example.com"],
+            # }
             existing_events = result["existing_events"]
             used_domains = result["used_domains"]
 
@@ -168,20 +156,18 @@ async def supervisor_tools_node(
             events_summary = response.content
             all_tool_messages.append(
                 ToolMessage(
-                    content=str(result), tool_call_id=tool_call["id"], name=tool_name
+                    content="Called ResearchEventsTool and returned multiple events",
+                    tool_call_id=tool_call["id"],
+                    name=tool_name,
                 )
             )
 
-    conversation_summary = await create_messages_summary(
-        state, all_tool_messages, config
-    )
     # The Command helper tells the graph where to go next and what state to update.
     return Command(
         goto="supervisor",
         update={
             "existing_events": existing_events,
             "conversation_history": all_tool_messages,
-            "conversation_summary": conversation_summary,
             "used_domains": used_domains,
             "events_summary": events_summary,
         },

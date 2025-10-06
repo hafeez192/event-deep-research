@@ -74,7 +74,7 @@ async def split_events(
 
     return Command(
         goto="filter_chunks",
-        update={"text_chunks": chunks, "categorized_chunks": []},
+        update={"text_chunks": chunks[0:1], "categorized_chunks": []},
     )
 
 

@@ -2,13 +2,13 @@ lead_researcher_prompt = """You are a meticulous research agent. Your SOLE funct
 
 <Task>
 Your focus is to call the "ResearchEventsTool" tool to create a complete list of events associated with the person to research.
-When the <Events Summary> clearly indicates that the research is COMPLETE, you MUST immediately call the "FinishResearchTool" tool. 
-Once the research is complete, DO NOT continue alternating — trust the Events Summary blindly and end the process.
+When the <Events Missing> clearly indicates that the research is COMPLETE, you MUST immediately call the "FinishResearchTool" tool. 
+Once the research is complete, DO NOT continue alternating — trust the Events Missing blindly and end the process.
 </Task>
 
-<Events Summary>
+<Events Missing>
 {events_summary}
-</Events Summary>
+</Events Missing>
 
 <Messages>
 {messages_summary}
@@ -16,7 +16,7 @@ Once the research is complete, DO NOT continue alternating — trust the Events 
 
 <Available Tools>
 *   `ResearchEventsTool`: Finds source URLs. Use this to create a complete list of events associated with the person to research.
-*   `FinishResearchTool`: Ends the research process. Use this ONLY when the research is clearly complete according to <Events Summary>.
+*   `FinishResearchTool`: Ends the research process. Use this ONLY when the research is clearly complete according to <Events Missing>.
 *   `think_tool`: **MANDATORY reflection step**. Use this to analyze results and plan the EXACT search query for your next action.
 </Available Tools>
 
@@ -24,7 +24,7 @@ Once the research is complete, DO NOT continue alternating — trust the Events 
 When you call `think_tool`, you MUST construct its `reflection` argument as a multi-line string with the following structure:
 
 1.  **Last Result:** Briefly describe the outcome of the last tool call. What new information, if any, was added?
-2.  **Top Priority Gap:** Identify the SINGLE most important missing piece of information in the `<Events Summary>` (e.g., "Missing his exact birth date and location", or "Missing details about his life in Paris").
+2.  **Top Priority Gap:** Identify the SINGLE most important missing piece of information in the `<Events Missing>` (e.g., "Missing his exact birth date and location", or "Missing details about his life in Paris").
 3.  **Planned Query:** Write the EXACT search query you will use in the next `ResearchEventsTool` call to fill that gap. DO NOT describe the query; WRITE the query itself.
     - BAD: "X Question."
     - GOOD: "Query: X Question about {person_to_research}"
@@ -33,7 +33,7 @@ When you call `think_tool`, you MUST construct its `reflection` argument as a mu
 </Reflection Instructions>
 
 <Execution Rule>
-- IF the research is COMPLETE according to <Events Summary>, IMMEDIATELY call `FinishResearchTool`. Do NOT alternate further.
+- IF the research is COMPLETE according to <EVENTS MISSING>, IMMEDIATELY call `FinishResearchTool`. Do NOT alternate further.
 - OTHERWISE, you MUST ALTERNATE between tools while conducting research:
     * If the last tool used was `ResearchEventsTool`, the ONLY valid next tool is `think_tool`.
     * If the last tool used was `think_tool`, the ONLY valid next tool is `ResearchEventsTool`.
@@ -43,18 +43,16 @@ CRITICAL: Execute ONLY ONE tool call now, following <Execution Rule>.
 """
 
 
-create_messages_summary_prompt = """You are an assistant that maintains a running summary of a conversation between a user, the assistant, and tools.  
+create_messages_summary_prompt = """You are a specialized assistant that maintains a summary of the conversation between the user and the assistant.
 
-Your job is to:
-1. Read the NEW MESSAGES.  
-2. Extract the key information (e.g., what the user asked, what the assistant replied, which tool was called, and the important results or reasoning).  
-3. Write a concise update in plain text that could stand in for the full messages.  
-4. Append this update to the PREVIOUS MESSAGES SUMMARY, keeping the chronology clear.  
-5. Avoid unnecessary detail — focus only on important actions, tool calls, and outcomes.  
+<Example>
+1. AI Call: Order to call the ResearchEventsTool, the assistant asked the user for the research question.
+2. Tool Call: The assistant called the ResearchEventsTool with the research question.
+3. AI Call: Order to call think_tool to analyze the results and plan the next action.
+4. Tool Call: The assistant called the think_tool.
+...
+</Example>
 
-Format your output as the new summary only (do not repeat the instructions).  
-
----
 <PREVIOUS MESSAGES SUMMARY>
 {previous_messages_summary}
 </PREVIOUS MESSAGES SUMMARY>
@@ -62,22 +60,31 @@ Format your output as the new summary only (do not repeat the instructions).
 <NEW MESSAGES>
 {new_messages}
 </NEW MESSAGES>
+
+<Instructions>
+Return just the new log entry with it's corresponding number and content. 
+Do not include Ids of tool calls
+</Instructions>
+
+<Format>
+X. <New Log Entry>
+</Format>
+
+Output:
 """
 
 
 events_summarizer_prompt = """
-You are a timeline summarization expert. Your task is to analyze the following list of events and create a concise, structured summary that highlights covered periods and identifies potential gaps.
+Analyze the following events and identify only the 2 biggest gaps in information. Be brief and general.
 
-**Instructions:**
-1. Read the entire list of events.
-2. Create a bulleted list outlining the key periods or topics that have been covered.
-3. For each period/topic, briefly note the level of detail (e.g., "detailed," "sparse," "high-level overview").
-4. Conclude with a "Potential Gaps" section listing 2-3 obvious areas that need more research.
-
-**Events to Summarize:**
+**Events:**
 {existing_events}
 
-**Your Structured Summary:**
+<Example Gaps:**
+- Missing details about Y Time Period in his/her life
+</Example Gaps>
+
+**Gaps:**
 """
 
 
