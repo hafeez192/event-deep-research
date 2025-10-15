@@ -19,7 +19,7 @@ INCLUDE ALL THE INFORMATION FROM THE EVENTS, do not abbreviate or omit any infor
 """
 
 EXTRACT_AND_CATEGORIZE_PROMPT = """
-You are a Biographical Event Extractor and Categorizer. Your task is to analyze text chunks for events related to: **"{research_question}"**
+You are a Biographical Event Extractor and Categorizer. Your task is to analyze text chunks for events related to the life of the historical figure**
 
 <Available Tools>
 - `IrrelevantChunk` (use if the text contains NO biographical events relevant to the research question)

@@ -6,7 +6,7 @@ from langchain_core.messages import (
     ToolMessage,
 )
 from langchain_core.runnables import RunnableConfig
-from langgraph.graph import END, START, StateGraph
+from langgraph.graph import START, StateGraph
 from langgraph.types import Command
 from src.configuration import Configuration
 from src.llm_service import (
@@ -60,11 +60,14 @@ async def supervisor_node(
     tools_model = create_llm_with_tools(tools=tools, config=config)
     messages = state.get("conversation_history", "")
     messages_summary = get_buffer_string_with_tools(messages)
+    last_message = ""
+    if len(messages_summary) > 0:
+        last_message = messages[-1]
     system_message = SystemMessage(
         content=lead_researcher_prompt.format(
             person_to_research=state["person_to_research"],
-            events_summary=state.get("events_summary", ""),
-            messages_summary=messages_summary,
+            events_summary=state.get("events_summary", "Everything is missing"),
+            last_message=last_message,
             max_iterations=5,
         )
     )
@@ -101,7 +104,7 @@ async def supervisor_tools_node(
 
     # If the LLM made no tool calls, we finish.
     if not last_message.tool_calls or exceeded_allowed_iterations:
-        return Command(goto=END)
+        return Command(goto="structure_events")
 
     # This is the core logic for executing tools and updating state.
     all_tool_messages = []
@@ -181,21 +184,42 @@ async def structure_events(
     print("--- Step 2: Structuring Events into JSON ---")
 
     # Get the cleaned events from the previous step
-    existing_events = state.get("events_summary", "")
+    existing_events = state.get("existing_events", "")
 
-    if not existing_events or len(existing_events) == 0:
+    if not existing_events:
         print("Warning: No cleaned events text found in state")
         return {"chronology": []}
 
     structured_llm = create_llm_structured_model(config=config, class_name=Chronology)
 
-    prompt = structure_events_prompt.format(existing_events=existing_events)
+    early_prompt = structure_events_prompt.format(
+        existing_events=existing_events["early"]
+    )
+    career_prompt = structure_events_prompt.format(
+        existing_events=existing_events["career"]
+    )
+    personal_prompt = structure_events_prompt.format(
+        existing_events=existing_events["personal"]
+    )
+    legacy_prompt = structure_events_prompt.format(
+        existing_events=existing_events["legacy"]
+    )
 
+    early_response = await structured_llm.ainvoke(early_prompt)
+    career_response = await structured_llm.ainvoke(career_prompt)
+    personal_response = await structured_llm.ainvoke(personal_prompt)
+    legacy_response = await structured_llm.ainvoke(legacy_prompt)
     # Invoke the second model to get the final structured output
-    structured_response = await structured_llm.ainvoke(prompt)
+
+    all_events = (
+        early_response.events
+        + career_response.events
+        + personal_response.events
+        + legacy_response.events
+    )
 
     return {
-        "structured_events": structured_response.events,
+        "structured_events": all_events,
     }
 
 

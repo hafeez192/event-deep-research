@@ -70,7 +70,7 @@ def get_tokenizer():
 
 
 async def chunk_text_by_tokens(
-    text: str, chunk_size: int = 300, overlap_size: int = 20
+    text: str, chunk_size: int = 1000, overlap_size: int = 20
 ) -> List[str]:
     """Splits text into token-based, overlapping chunks."""
     if not text:

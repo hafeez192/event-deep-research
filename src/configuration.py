@@ -59,7 +59,7 @@ class Configuration(BaseModel):
         default=5, description="Maximum number of tool iterations"
     )
     max_chunks: int = Field(
-        default=2,
+        default=20,
         description="Maximum number of chunks to process for biographical event detection",
     )
 

@@ -74,7 +74,7 @@ async def split_events(
 
     return Command(
         goto="filter_chunks",
-        update={"text_chunks": chunks[0:1], "categorized_chunks": []},
+        update={"text_chunks": chunks[0:20], "categorized_chunks": []},
     )
 
 
@@ -107,6 +107,7 @@ async def filter_chunks(
             result.contains_biographic_event
             for result in chunk_result["results"].values()
         )
+        print(f"contains_biographic_event: {has_events}")
 
         if has_events:
             relevant_chunks.append(chunk)
@@ -117,7 +118,7 @@ async def filter_chunks(
 
     return Command(
         goto="extract_and_categorize_chunk",
-        update={"text_chunks": relevant_chunks, "categorized_chunks": []},
+        update={"text_chunks": chunks, "categorized_chunks": []},
     )
 
 
@@ -137,7 +138,8 @@ async def extract_and_categorize_chunk(
     research_question = state.get("research_question", "")
 
     prompt = EXTRACT_AND_CATEGORIZE_PROMPT.format(
-        research_question=research_question, text_chunk=chunk
+        # research_question=research_question,
+        text_chunk=chunk
     )
 
     tools = [tool(RelevantEventsCategorized), tool(IrrelevantChunk)]
@@ -271,5 +273,8 @@ def get_langfuse_handler():
 
 
 merge_events_app = merge_events_graph_builder.compile().with_config(
-    {"callbacks": [get_langfuse_handler()]}
+    {
+        "callbacks": [get_langfuse_handler()],
+        "recursionLimit": 200,
+    },
 )
