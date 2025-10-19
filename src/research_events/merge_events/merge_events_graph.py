@@ -16,6 +16,7 @@ from src.research_events.merge_events.utils import ensure_categories_with_events
 from src.services.event_service import EventService
 from src.state import CategoriesWithEvents
 from src.url_crawler.utils import chunk_text_by_tokens
+from src.utils import get_langfuse_handler
 
 
 class RelevantEventsCategorized(BaseModel):
@@ -264,12 +265,6 @@ merge_events_graph_builder.add_node(
 )
 
 merge_events_graph_builder.add_edge(START, "split_events")
-
-
-def get_langfuse_handler():
-    from langfuse.langchain import CallbackHandler
-
-    return CallbackHandler()
 
 
 merge_events_app = merge_events_graph_builder.compile().with_config(

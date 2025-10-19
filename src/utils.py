@@ -81,3 +81,12 @@ def get_buffer_string_with_tools(messages: list[BaseMessage]) -> str:
             # fallback for unknown or custom message types
             lines.append(f"{m.__class__.__name__}: {m.content}")
     return "\n".join(lines)
+
+
+def get_langfuse_handler():
+    try:
+        from langfuse.langchain import CallbackHandler
+
+        return CallbackHandler()
+    except ImportError:
+        return None

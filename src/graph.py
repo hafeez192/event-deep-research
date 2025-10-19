@@ -27,16 +27,10 @@ from src.state import (
     SupervisorState,
     SupervisorStateInput,
 )
-from src.utils import get_buffer_string_with_tools, think_tool
+from src.utils import get_buffer_string_with_tools, get_langfuse_handler, think_tool
 
 config = Configuration()
 MAX_TOOL_CALL_ITERATIONS = config.max_tool_iterations
-
-
-def get_langfuse_handler():
-    from langfuse.langchain import CallbackHandler
-
-    return CallbackHandler()
 
 
 # Verify connection

@@ -11,6 +11,7 @@ from src.research_events.merge_events.merge_events_graph import merge_events_app
 from src.services.url_service import URLService
 from src.state import CategoriesWithEvents
 from src.url_crawler.url_krawler_graph import url_crawler_app
+from src.utils import get_langfuse_handler
 
 
 class InputResearchEventsState(TypedDict):
@@ -205,12 +206,6 @@ research_events_builder.add_node("merge_events_and_update", merge_events_and_upd
 
 # Set the entry point
 research_events_builder.add_edge(START, "url_finder")
-
-
-def get_langfuse_handler():
-    from langfuse.langchain import CallbackHandler
-
-    return CallbackHandler()
 
 
 research_events_app = research_events_builder.compile().with_config(
